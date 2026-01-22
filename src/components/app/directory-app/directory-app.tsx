@@ -189,7 +189,7 @@ export const DirectoryApp = ({
             } else {
                 // Folder view header - show folder/department name and action buttons
                 const currentDepartment = departments.find((d) => d.id === selectedDepartmentId);
-                const folderName = activeEntry?.name ?? currentDepartment?.name ?? "Directory";
+                const folderName = activeEntry?.name ?? currentDepartment?.name ?? "";
                 onHeaderContentChange(
                     <EmbeddedFolderHeader
                         folderName={folderName}

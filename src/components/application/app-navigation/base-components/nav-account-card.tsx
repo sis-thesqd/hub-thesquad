@@ -4,7 +4,8 @@ import type { FC, HTMLAttributes } from "react";
 import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Placement } from "@react-types/overlays";
-import { ChevronSelectorVertical, LogOut01, Settings01 } from "@untitledui/icons";
+import { ChevronSelectorVertical, LogOut01, Monitor01, Moon01, Sun } from "@untitledui/icons";
+import { useTheme } from "next-themes";
 import { useFocusManager } from "react-aria";
 import type { DialogProps as AriaDialogProps } from "react-aria-components";
 import { Button as AriaButton, Dialog as AriaDialog, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
@@ -21,12 +22,14 @@ const getInitials = (firstName?: string | null, lastName?: string | null): strin
 
 export const NavAccountMenu = ({
     className,
+    onClose,
     ...dialogProps
-}: AriaDialogProps & { className?: string }) => {
+}: AriaDialogProps & { className?: string; onClose?: () => void }) => {
     const focusManager = useFocusManager();
     const dialogRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const { signOut } = useAuth();
+    const { theme, setTheme } = useTheme();
 
     const handleSignOut = useCallback(async () => {
         await signOut();
@@ -68,7 +71,27 @@ export const NavAccountMenu = ({
         >
             <div className="rounded-xl bg-primary ring-1 ring-secondary">
                 <div className="flex flex-col gap-0.5 py-1.5">
-                    <NavAccountCardMenuItem label="Account settings" icon={Settings01} shortcut="⌘S" />
+                    <div className="px-3 py-2">
+                        <p className="text-xs font-medium text-tertiary">Theme</p>
+                    </div>
+                    <NavAccountCardMenuItem
+                        label="System"
+                        icon={Monitor01}
+                        onClick={() => setTheme("system")}
+                        isSelected={theme === "system"}
+                    />
+                    <NavAccountCardMenuItem
+                        label="Light"
+                        icon={Sun}
+                        onClick={() => setTheme("light")}
+                        isSelected={theme === "light"}
+                    />
+                    <NavAccountCardMenuItem
+                        label="Dark"
+                        icon={Moon01}
+                        onClick={() => setTheme("dark")}
+                        isSelected={theme === "dark"}
+                    />
                 </div>
             </div>
 
@@ -83,11 +106,13 @@ const NavAccountCardMenuItem = ({
     icon: Icon,
     label,
     shortcut,
+    isSelected,
     ...buttonProps
 }: {
     icon?: FC<{ className?: string }>;
     label: string;
     shortcut?: string;
+    isSelected?: boolean;
 } & HTMLAttributes<HTMLButtonElement>) => {
     return (
         <button {...buttonProps} className={cx("group/item w-full cursor-pointer px-1.5 focus:outline-hidden", buttonProps.className)}>
@@ -96,10 +121,14 @@ const NavAccountCardMenuItem = ({
                     "flex w-full items-center justify-between gap-3 rounded-md p-2 group-hover/item:bg-primary_hover",
                     // Focus styles.
                     "outline-focus-ring group-focus-visible/item:outline-2 group-focus-visible/item:outline-offset-2",
+                    isSelected && "bg-primary_hover",
                 )}
             >
-                <div className="flex gap-2 text-sm font-semibold text-secondary group-hover/item:text-secondary_hover">
-                    {Icon && <Icon className="size-5 text-fg-quaternary" />} {label}
+                <div className={cx(
+                    "flex gap-2 text-sm font-semibold group-hover/item:text-secondary_hover",
+                    isSelected ? "text-secondary_hover" : "text-secondary",
+                )}>
+                    {Icon && <Icon className={cx("size-5", isSelected ? "text-fg-quaternary_hover" : "text-fg-quaternary")} />} {label}
                 </div>
 
                 {shortcut && (
@@ -151,7 +180,7 @@ export const NavAccountCard = ({
                             )
                         }
                     >
-                        <NavAccountMenu />
+                        {({ close }) => <NavAccountMenu onClose={close} />}
                     </AriaPopover>
                 </AriaDialogTrigger>
             </div>

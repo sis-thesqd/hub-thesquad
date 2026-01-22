@@ -12,12 +12,12 @@ export const EmptyFolderState = ({ activeEntry }: EmptyFolderStateProps) => {
                 <Folder className="size-7 text-fg-quaternary" />
             </div>
             <h3 className="mt-4 text-base font-semibold text-primary">
-                {activeEntry ? "This folder is empty" : "No items yet"}
+                {activeEntry ? "This folder is empty" : "Nothing here yet"}
             </h3>
             <p className="mt-1 max-w-sm text-sm text-tertiary">
                 {activeEntry
                     ? "Add folders or pages to organize content inside this folder."
-                    : "Create your first folder or page to get started."}
+                    : "Create a new folder or page."}
             </p>
         </div>
     );

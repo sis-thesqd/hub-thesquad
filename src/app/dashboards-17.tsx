@@ -92,7 +92,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                     <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:px-8">
                         {headerContent || (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">
-                                {isHomePage ? "Departments" : "Department directory"}
+                                {isHomePage ? "Departments" : ""}
                             </p>
                         )}
                     </div>
