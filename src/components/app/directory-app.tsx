@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -86,6 +86,7 @@ export const DirectoryApp = ({
     const router = useRouter();
     const [departments, setDepartments] = useState<RipplingDepartment[]>(departmentsOverride ?? []);
     const [entries, setEntries] = useState<DirectoryEntry[]>([]);
+    const [allFolders, setAllFolders] = useState<DirectoryEntry[]>([]); // All folders from all departments
     const [frames, setFrames] = useState<Frame[]>([]);
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
     const [pathSegments, setPathSegments] = useState(initialPath);
@@ -150,21 +151,33 @@ export const DirectoryApp = ({
         );
     }, []);
 
+    const loadAllFolders = useCallback(async () => {
+        // Load all folders (entries without frame_id) from all departments
+        return await supabaseFetch<DirectoryEntry[]>(
+            `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order&frame_id=is.null&order=name.asc`,
+        );
+    }, []);
+
     const refreshData = useCallback(
         async (departmentId: string) => {
             setIsLoading(true);
             setError(null);
             try {
-                const [entriesData, framesData] = await Promise.all([loadEntries(departmentId), loadFrames()]);
+                const [entriesData, framesData, allFoldersData] = await Promise.all([
+                    loadEntries(departmentId),
+                    loadFrames(),
+                    loadAllFolders(),
+                ]);
                 setEntries(entriesData);
                 setFrames(framesData);
+                setAllFolders(allFoldersData);
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to load data");
             } finally {
                 setIsLoading(false);
             }
         },
-        [loadEntries, loadFrames],
+        [loadEntries, loadFrames, loadAllFolders],
     );
 
     useEffect(() => {
@@ -254,6 +267,18 @@ export const DirectoryApp = ({
         return map;
     }, [entriesById, filteredEntries]);
 
+    // Map of all folders by ID (across all departments)
+    const allFoldersById = useMemo(() => new Map(allFolders.map((folder) => [folder.id, folder])), [allFolders]);
+
+    // Build paths for all folders (not just current department)
+    const allFolderPathById = useMemo(() => {
+        const map = new Map<string, string[]>();
+        allFolders.forEach((folder) => {
+            map.set(folder.id, buildPathSegments(allFoldersById, folder));
+        });
+        return map;
+    }, [allFolders, allFoldersById]);
+
     const activeEntry = useMemo(() => {
         if (!pathSegments?.length) return null;
         return findEntryByPath(childrenByParent, pathSegments);
@@ -279,14 +304,15 @@ export const DirectoryApp = ({
                             label: departments.find((dept) => dept.id === id)?.name ?? id,
                         })),
                     );
+                    // Only include placements that are in folders (not top level)
                     const placements = entries
-                        .filter((entry) => entry.frame_id === activeFrame.id && entry.department_id === selectedDepartmentId)
-                        .map((entry) => entry.parent_id ?? "root");
+                        .filter((entry) => entry.frame_id === activeFrame.id && entry.department_id === selectedDepartmentId && entry.parent_id !== null)
+                        .map((entry) => entry.parent_id as string);
                     replaceSelectedItems(
                         pagePlacements,
                         placements.map((id) => ({
                             id,
-                            label: id === "root" ? "Top level" : entriesById.get(id)?.name ?? id,
+                            label: entriesById.get(id)?.name ?? id,
                         })),
                     );
                     setEditPageOpen(true);
@@ -348,16 +374,23 @@ export const DirectoryApp = ({
     }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, entries, selectedDepartmentId, entriesById]);
 
     const folderOptions = useMemo(() => {
-        const options = filteredEntries
-            .filter((entry) => !entry.frame_id)
-            .map((entry) => ({
-                id: entry.id,
-                label: entry.name,
-                supportingText: "/" + (pathById.get(entry.id)?.join("/") ?? entry.slug),
-            }));
+        // Use allFolders to show folders from ALL departments, not just the current one
+        const options = allFolders.map((folder) => {
+            const dept = departments.find((d) => d.id === folder.department_id);
+            const path = allFolderPathById.get(folder.id)?.join("/") ?? folder.slug;
+            return {
+                id: folder.id,
+                label: folder.name,
+                supportingText: `${dept?.name ?? "Unknown"} / ${path}`,
+            };
+        });
 
-        return [{ id: "__create_new__", label: "+ Create new folder" }, ...options];
-    }, [filteredEntries, pathById]);
+        // Create new folder is always first, no "Top level" option
+        return [
+            { id: "__create_new__", label: "+ Create new folder" },
+            ...options,
+        ];
+    }, [allFolders, allFolderPathById, departments]);
 
     const parentOptions = useMemo(() => {
         return [
@@ -383,12 +416,12 @@ export const DirectoryApp = ({
                 supportingText: "Top level",
             });
 
-            // Add folders for this department (only if we have entries loaded for it)
-            const deptFolders = entries.filter(
-                (entry) => entry.department_id === dept.id && !entry.frame_id
+            // Add folders for this department from allFolders (not just current dept entries)
+            const deptFolders = allFolders.filter(
+                (folder) => folder.department_id === dept.id
             );
             deptFolders.forEach((folder) => {
-                const path = pathById.get(folder.id)?.join("/") ?? folder.slug;
+                const path = allFolderPathById.get(folder.id)?.join("/") ?? folder.slug;
                 options.push({
                     id: `${dept.id}:${folder.id}`,
                     label: folder.name,
@@ -398,7 +431,7 @@ export const DirectoryApp = ({
         });
 
         return options;
-    }, [departments, entries, pathById]);
+    }, [departments, allFolders, allFolderPathById]);
 
     const activeParentId = activeEntry?.frame_id ? activeEntry.parent_id : activeEntry?.id ?? null;
 
@@ -467,6 +500,12 @@ export const DirectoryApp = ({
         const iframeUrl = pageForm.iframeUrl.trim();
         if (!name || !iframeUrl) return;
 
+        // Require at least one folder placement
+        if (!placementIds.length) {
+            setError("Please select at least one folder placement");
+            return;
+        }
+
         const slug = pageForm.slug.trim() || slugify(name);
 
         // Always include the current department in visibility
@@ -482,15 +521,20 @@ export const DirectoryApp = ({
             department_ids: departmentIds,
         });
 
-        const placements = placementIds.length ? placementIds : ["root"];
+        const placements = placementIds;
 
-        await supabaseUpsert("sh_directory", placements.map((placementId) => ({
-            department_id: selectedDepartmentId,
-            parent_id: placementId === "root" ? null : placementId,
-            frame_id: frame.id,
-            name,
-            slug,
-        })));
+        await supabaseUpsert("sh_directory", placements.map((placementId) => {
+            // Look up folder to get its department
+            const folder = allFoldersById.get(placementId);
+            const deptId = folder?.department_id ?? selectedDepartmentId;
+            return {
+                department_id: deptId,
+                parent_id: placementId,
+                frame_id: frame.id,
+                name,
+                slug,
+            };
+        }));
 
         setPageForm(emptyForm);
         setCreatePageOpen(false);
@@ -499,9 +543,14 @@ export const DirectoryApp = ({
 
         await refreshData(selectedDepartmentId);
 
-        const parentEntry = placements[0] === "root" ? null : entriesById.get(placements[0] as string) ?? null;
-        const targetPath = parentEntry ? buildPathSegments(entriesById, parentEntry).concat(slug) : [slug];
-        router.push(`/${selectedDepartmentId}/${targetPath.join("/")}`);
+        // Navigate to the first placement - could be in a different department
+        const firstPlacement = placements[0];
+        const parentFolder = allFoldersById.get(firstPlacement);
+        const targetDeptId = parentFolder?.department_id ?? selectedDepartmentId;
+        const targetPath = parentFolder
+            ? buildPathSegments(allFoldersById, parentFolder).concat(slug)
+            : [slug];
+        router.push(`/${targetDeptId}/${targetPath.join("/")}`);
     };
 
     const handleUpdateFolder = async (entry: DirectoryEntry) => {
@@ -550,9 +599,10 @@ export const DirectoryApp = ({
 
         const existingPlacements = entries
             .filter((entry) => entry.frame_id === frame.id && entry.department_id === selectedDepartmentId)
-            .map((entry) => ({ id: entry.id, parent_id: entry.parent_id ?? "root" }));
+            .map((entry) => ({ id: entry.id, parent_id: entry.parent_id }))
+            .filter((placement): placement is { id: string; parent_id: string } => placement.parent_id !== null);
 
-        const selectedSet = new Set(placementIds.length ? placementIds : ["root"]);
+        const selectedSet = new Set(placementIds);
         const existingSet = new Set(existingPlacements.map((placement) => placement.parent_id));
 
         const toRemove = existingPlacements.filter((placement) => !selectedSet.has(placement.parent_id));
@@ -564,15 +614,21 @@ export const DirectoryApp = ({
         }
 
         if (toAdd.length) {
+            
             await supabaseUpsert(
                 "sh_directory",
-                toAdd.map((placementId) => ({
-                    department_id: selectedDepartmentId,
-                    parent_id: placementId === "root" ? null : placementId,
-                    frame_id: frame.id,
-                    name,
-                    slug,
-                })),
+                toAdd.map((placementId) => {
+                    // Look up folder to get its department
+                    const folder = allFoldersById.get(placementId);
+                    const deptId = folder?.department_id ?? selectedDepartmentId;
+                    return {
+                        department_id: deptId,
+                        parent_id: placementId,
+                        frame_id: frame.id,
+                        name,
+                        slug,
+                    };
+                }),
             );
         }
 
@@ -609,11 +665,6 @@ export const DirectoryApp = ({
                             <h1 className="text-xl font-semibold text-primary">
                                 {activeEntry?.name ?? "Directory"}
                             </h1>
-                            <p className="mt-0.5 text-sm text-tertiary">
-                                {visibleFolders.length > 0 || visiblePages.length > 0
-                                    ? `${visibleFolders.length} folders, ${visiblePages.length} pages`
-                                    : "No items yet"}
-                            </p>
                         </div>
                         <div className="flex items-center gap-2">
                             {activeEntry && !activeEntry.frame_id && (
@@ -654,11 +705,14 @@ export const DirectoryApp = ({
                                         setPageForm(emptyForm);
                                         replaceSelectedItems(pageDepartments, []);
                                         if (activeParentId) {
-                                            const label = entriesById.get(activeParentId)?.name ?? "Current folder";
+                                            const folder = entriesById.get(activeParentId);
+                                            const label = folder?.name ?? "Current folder";
                                             replaceSelectedItems(pagePlacements, [{ id: activeParentId, label }]);
                                         } else {
-                                            replaceSelectedItems(pagePlacements, [{ id: "root", label: "Top level" }]);
+                                            // No default - user must select a folder
+                                            replaceSelectedItems(pagePlacements, []);
                                         }
+                                        setError(null);
                                         setCreatePageOpen(true);
                                     }}
                                 >
@@ -796,11 +850,14 @@ export const DirectoryApp = ({
                                                 setPageForm(emptyForm);
                                                 replaceSelectedItems(pageDepartments, []);
                                                 if (activeParentId) {
-                                                    const label = entriesById.get(activeParentId)?.name ?? "Current folder";
+                                                    const folder = entriesById.get(activeParentId);
+                                                    const label = folder?.name ?? "Current folder";
                                                     replaceSelectedItems(pagePlacements, [{ id: activeParentId, label }]);
                                                 } else {
-                                                    replaceSelectedItems(pagePlacements, [{ id: "root", label: "Top level" }]);
+                                                    // No default - user must select a folder
+                                                    replaceSelectedItems(pagePlacements, []);
                                                 }
+                                                setError(null);
                                                 setCreatePageOpen(true);
                                             }}
                                         >
@@ -931,6 +988,20 @@ export const DirectoryApp = ({
                                                 setInlineFolderForm(emptyForm);
                                                 setInlineFolderLocation(`${selectedDepartmentId}:root`);
                                                 setInlineFolderOpen(true);
+                                            } else {
+                                                // Auto-add department visibility when folder from different department is selected
+                                                const folder = allFoldersById.get(key as string);
+                                                if (folder) {
+                                                    const deptId = folder.department_id;
+                                                    const alreadySelected = pageDepartments.items.some((item) => item.id === deptId);
+                                                    if (!alreadySelected) {
+                                                        const dept = departments.find((d) => d.id === deptId);
+                                                        pageDepartments.append({
+                                                            id: deptId,
+                                                            label: dept?.name ?? deptId,
+                                                        });
+                                                    }
+                                                }
                                             }
                                         }}
                                     >
@@ -1038,6 +1109,20 @@ export const DirectoryApp = ({
                                                 setInlineFolderForm(emptyForm);
                                                 setInlineFolderLocation(`${selectedDepartmentId}:root`);
                                                 setInlineFolderOpen(true);
+                                            } else {
+                                                // Auto-add department visibility when folder from different department is selected
+                                                const folder = allFoldersById.get(key as string);
+                                                if (folder) {
+                                                    const deptId = folder.department_id;
+                                                    const alreadySelected = pageDepartments.items.some((item) => item.id === deptId);
+                                                    if (!alreadySelected) {
+                                                        const dept = departments.find((d) => d.id === deptId);
+                                                        pageDepartments.append({
+                                                            id: deptId,
+                                                            label: dept?.name ?? deptId,
+                                                        });
+                                                    }
+                                                }
                                             }
                                         }}
                                     >
