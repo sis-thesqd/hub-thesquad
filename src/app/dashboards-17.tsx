@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type React from "react";
 import { useRouter } from "next/navigation";
 import {
     Announcement03,
@@ -36,6 +37,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
     const router = useRouter();
     const [departments, setDepartments] = useState<RipplingDepartment[]>([]);
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
+    const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
 
     useEffect(() => {
         setSelectedDepartmentId(initialDepartmentId ?? "");
@@ -106,8 +108,9 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
             <main className="min-w-0 flex-1 lg:pt-2 lg:pl-1">
                 <div className="flex h-dvh flex-col gap-8 overflow-hidden border-secondary pt-8 pb-12 lg:rounded-tl-[24px] lg:border-t lg:border-l">
                     <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:px-8">
-                        <p className="text-xl font-semibold text-primary lg:text-display-xs">Department directory</p>
-                        <Input size="sm" shortcut aria-label="Search" placeholder="Search" icon={SearchLg} className="lg:max-w-80" />
+                        {headerContent || (
+                            <p className="text-xl font-semibold text-primary lg:text-display-xs">Department directory</p>
+                        )}
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-hidden px-4 lg:px-8">
@@ -117,6 +120,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                             variant="embedded"
                             showDepartments={false}
                             departmentsOverride={departments}
+                            onHeaderContentChange={setHeaderContent}
                         />
                     </div>
                 </div>

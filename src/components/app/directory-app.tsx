@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Edit01, FileCode01, Folder, Home01, Plus } from "@untitledui/icons";
+import { Copy01, Edit01, FileCode01, Folder, Home01, Plus, Share01, ArrowUpRight } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
+import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { MultiSelect } from "@/components/base/select/multi-select";
@@ -15,6 +17,7 @@ import type { DirectoryEntry, Frame, RipplingDepartment } from "@/utils/supabase
 import { supabaseFetch, supabaseUpsert } from "@/utils/supabase/rest";
 import { cx } from "@/utils/cx";
 import { useListData } from "react-stately";
+import { useClipboard } from "@/hooks/use-clipboard";
 
 const slugify = (value: string) =>
     value
@@ -29,6 +32,7 @@ type DirectoryAppProps = {
     variant?: "full" | "embedded";
     showDepartments?: boolean;
     departmentsOverride?: RipplingDepartment[];
+    onHeaderContentChange?: (content: React.ReactNode | null) => void;
 };
 
 type FormState = {
@@ -77,6 +81,7 @@ export const DirectoryApp = ({
     variant = "full",
     showDepartments = true,
     departmentsOverride,
+    onHeaderContentChange,
 }: DirectoryAppProps) => {
     const router = useRouter();
     const [departments, setDepartments] = useState<RipplingDepartment[]>(departmentsOverride ?? []);
@@ -103,6 +108,8 @@ export const DirectoryApp = ({
     const pagePlacements = useListData<SelectItemType>({
         initialItems: [],
     });
+
+    const clipboard = useClipboard();
 
     const clearSelectedItems = (list: ReturnType<typeof useListData<SelectItemType>>) => {
         list.items.forEach((item) => list.remove(item.id));
@@ -250,6 +257,94 @@ export const DirectoryApp = ({
     }, [childrenByParent, pathSegments]);
 
     const activeFrame = activeEntry?.frame_id ? frameById.get(activeEntry.frame_id) ?? null : null;
+
+    // Provide header content to parent when variant is embedded
+    useEffect(() => {
+        if (variant === "embedded" && onHeaderContentChange) {
+            if (activeFrame && activeEntry) {
+                const handleEditClick = () => {
+                    setPageForm({
+                        name: activeFrame.name,
+                        slug: activeEntry.slug,
+                        iframeUrl: activeFrame.iframe_url,
+                        description: activeFrame.description ?? "",
+                    });
+                    replaceSelectedItems(
+                        pageDepartments,
+                        activeFrame.department_ids.map((id) => ({
+                            id,
+                            label: departments.find((dept) => dept.id === id)?.name ?? id,
+                        })),
+                    );
+                    const placements = entries
+                        .filter((entry) => entry.frame_id === activeFrame.id && entry.department_id === selectedDepartmentId)
+                        .map((entry) => entry.parent_id ?? "root");
+                    replaceSelectedItems(
+                        pagePlacements,
+                        placements.map((id) => ({
+                            id,
+                            label: id === "root" ? "Top level" : entriesById.get(id)?.name ?? id,
+                        })),
+                    );
+                    setEditPageOpen(true);
+                };
+
+                const handleOpenInNewTab = () => {
+                    window.open(activeFrame.iframe_url, "_blank", "noopener,noreferrer");
+                };
+
+                const handleCopyUrl = async () => {
+                    await clipboard.copy(activeFrame.iframe_url);
+                };
+
+                onHeaderContentChange(
+                    <>
+                        <h1 className="text-xl font-semibold text-primary lg:text-display-xs">
+                            {activeEntry.name ?? "Directory"}
+                        </h1>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                size="sm"
+                                color="tertiary"
+                                iconLeading={Edit01}
+                                onClick={handleEditClick}
+                            >
+                                Edit
+                            </Button>
+                            <Dropdown.Root>
+                                <Button
+                                    size="sm"
+                                    color="primary"
+                                    iconLeading={Share01}
+                                >
+                                    Share
+                                </Button>
+                                <Dropdown.Popover>
+                                    <Dropdown.Menu>
+                                        <Dropdown.Item
+                                            icon={ArrowUpRight}
+                                            onAction={handleOpenInNewTab}
+                                        >
+                                            Open in new tab
+                                        </Dropdown.Item>
+                                        <Dropdown.Item
+                                            icon={Copy01}
+                                            onAction={handleCopyUrl}
+                                        >
+                                            Copy URL
+                                        </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown.Popover>
+                            </Dropdown.Root>
+                        </div>
+                    </>
+                );
+            } else {
+                onHeaderContentChange(null);
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [variant, onHeaderContentChange, activeFrame, activeEntry]);
 
     const folderOptions = useMemo(() => {
         const options = filteredEntries
@@ -518,50 +613,6 @@ export const DirectoryApp = ({
                     {/* Embedded Page View */}
                     {!isLoading && activeFrame && (
                         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-secondary_alt bg-primary">
-                            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-secondary_alt px-4 py-3 lg:px-8">
-                                <div>
-                                    <h1 className="text-xl font-semibold text-primary">
-                                        {activeEntry?.name ?? "Directory"}
-                                    </h1>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {activeEntry?.frame_id && activeFrame && (
-                                        <Button
-                                            size="sm"
-                                            color="tertiary"
-                                            iconLeading={Edit01}
-                                            onClick={() => {
-                                                setPageForm({
-                                                    name: activeFrame.name,
-                                                    slug: activeEntry.slug,
-                                                    iframeUrl: activeFrame.iframe_url,
-                                                    description: activeFrame.description ?? "",
-                                                });
-                                                replaceSelectedItems(
-                                                    pageDepartments,
-                                                    activeFrame.department_ids.map((id) => ({
-                                                        id,
-                                                        label: departments.find((dept) => dept.id === id)?.name ?? id,
-                                                    })),
-                                                );
-                                                const placements = entries
-                                                    .filter((entry) => entry.frame_id === activeFrame.id && entry.department_id === selectedDepartmentId)
-                                                    .map((entry) => entry.parent_id ?? "root");
-                                                replaceSelectedItems(
-                                                    pagePlacements,
-                                                    placements.map((id) => ({
-                                                        id,
-                                                        label: id === "root" ? "Top level" : entriesById.get(id)?.name ?? id,
-                                                    })),
-                                                );
-                                                setEditPageOpen(true);
-                                            }}
-                                        >
-                                            Edit
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
                             <iframe
                                 title={activeFrame.name}
                                 src={activeFrame.iframe_url}
