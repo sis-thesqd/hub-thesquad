@@ -12,28 +12,40 @@ import { createClient } from "@/utils/supabase/client";
 
 export interface RipplingWorker {
     id: string;
+    created_at: string | null;
+    updated_at: string | null;
     user_id: string | null;
-    work_email: string | null;
-    personal_email: string | null;
     display_name: string | null;
     given_name: string | null;
     family_name: string | null;
     middle_name: string | null;
     preferred_given_name: string | null;
     preferred_family_name: string | null;
+    work_email: string | null;
+    personal_email: string | null;
+    phone_numbers: Record<string, unknown> | null;
     title: string | null;
+    title_effective_date: string | null;
     status: string | null;
     start_date: string | null;
     end_date: string | null;
-    department_id: string | null;
+    number: number | null;
+    is_manager: boolean | null;
     manager_id: string | null;
+    department_id: string | null;
     level_id: string | null;
     teams_ids: string[] | null;
-    is_manager: boolean | null;
     country: string | null;
     location_type: string | null;
     work_location_id: string | null;
     employment_type_id: string | null;
+    overtime_exemption: string | null;
+    gender: string | null;
+    date_of_birth: string | null;
+    compensation_id: string | null;
+    legal_entity_id: string | null;
+    termination_details: Record<string, unknown> | null;
+    synced_at: string | null;
 }
 
 interface AuthContextType {
@@ -74,12 +86,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const fetchWorker = async (email: string): Promise<RipplingWorker | null> => {
         const { data, error } = await supabase
             .from("rippling_workers")
-            .select(
-                `id, user_id, work_email, personal_email, display_name, given_name, family_name, 
-                 middle_name, preferred_given_name, preferred_family_name, title, status, 
-                 start_date, end_date, department_id, manager_id, level_id, teams_ids, 
-                 is_manager, country, location_type, work_location_id, employment_type_id`
-            )
+            .select("*")
             .or(`work_email.eq.${email},personal_email.eq.${email}`)
             .eq("status", "ACTIVE")
             .single();

@@ -10,6 +10,7 @@ import { AvatarLabelGroup } from "@/components/base/avatar/avatar-label-group";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { UntitledLogo } from "@/components/foundations/logo/untitledui-logo";
+import { useAuth } from "@/providers/auth-provider";
 import { cx } from "@/utils/cx";
 import { MobileNavigationHeader } from "../base-components/mobile-header";
 import { NavAccountMenu } from "../base-components/nav-account-card";
@@ -17,6 +18,12 @@ import { NavItemBase } from "../base-components/nav-item";
 import { NavItemButton } from "../base-components/nav-item-button";
 import { NavList } from "../base-components/nav-list";
 import type { NavItemType } from "../config";
+
+const getInitials = (firstName?: string | null, lastName?: string | null): string => {
+    const first = firstName?.charAt(0)?.toUpperCase() || "";
+    const last = lastName?.charAt(0)?.toUpperCase() || "";
+    return first + last || "?";
+};
 
 interface SidebarNavigationSlimProps {
     /** URL of the currently active item. */
@@ -32,10 +39,14 @@ interface SidebarNavigationSlimProps {
 }
 
 export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hideBorder, hideRightBorder }: SidebarNavigationSlimProps) => {
+    const { worker, userEmail } = useAuth();
     const activeItem = [...items, ...footerItems].find((item) => item.href === activeUrl || item.items?.some((subItem) => subItem.href === activeUrl));
     const fallbackItem = items[0] || footerItems[0] || { label: "", href: "", icon: LifeBuoy01 };
     const [currentItem, setCurrentItem] = useState(activeItem || fallbackItem);
     const [isHovering, setIsHovering] = useState(false);
+
+    const displayName = worker?.display_name || worker?.given_name || "User";
+    const initials = getInitials(worker?.given_name, worker?.family_name);
 
     const isSecondarySidebarVisible = isHovering && Boolean(currentItem.items?.length);
 
@@ -107,7 +118,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                                 cx("group relative inline-flex rounded-full", (isPressed || isFocused) && "outline-2 outline-offset-2 outline-focus-ring")
                             }
                         >
-                            <Avatar status="online" src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80" size="md" alt="Olivia Rhye" />
+                            <Avatar initials={initials} size="md" alt={displayName} />
                         </AriaButton>
                         <AriaPopover
                             placement="right bottom"
@@ -157,8 +168,8 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                         </ul>
                         <div className="sticky bottom-0 mt-auto flex justify-between border-t border-secondary bg-primary px-2 py-5">
                             <div>
-                                <p className="text-sm font-semibold text-primary">Olivia Rhye</p>
-                                <p className="text-sm text-tertiary">olivia@untitledui.com</p>
+                                <p className="text-sm font-semibold text-primary">{displayName}</p>
+                                <p className="text-sm text-tertiary">{userEmail || ""}</p>
                             </div>
                             <div className="absolute top-2.5 right-0">
                                 <ButtonUtility size="sm" color="tertiary" tooltip="Log out" icon={LogOut01} />
@@ -211,11 +222,10 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
 
                         <div className="relative flex items-center gap-3 border-t border-secondary pt-6 pr-8 pl-2">
                             <AvatarLabelGroup
-                                status="online"
                                 size="md"
-                                src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80"
-                                title="Olivia Rhye"
-                                subtitle="olivia@untitledui.com"
+                                initials={initials}
+                                title={displayName}
+                                subtitle={userEmail || ""}
                             />
 
                             <div className="absolute top-1/2 right-0 -translate-y-1/2">

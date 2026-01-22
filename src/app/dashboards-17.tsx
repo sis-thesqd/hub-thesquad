@@ -9,6 +9,7 @@ import { DirectoryApp } from "@/components/app/directory-app";
 import type { NavigationPage, RipplingDepartment, ShConfig } from "@/utils/supabase/types";
 import { supabaseFetch } from "@/utils/supabase/rest";
 import { getIconByName } from "@/utils/icon-map";
+import { useAuth } from "@/providers/auth-provider";
 import { HomeGrid } from "./components/home-grid";
 
 interface Dashboard17Props {
@@ -18,12 +19,14 @@ interface Dashboard17Props {
 
 export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Props) => {
     const router = useRouter();
+    const { worker } = useAuth();
     const [departments, setDepartments] = useState<RipplingDepartment[]>([]);
     const [navigationPages, setNavigationPages] = useState<NavigationPage[]>([]);
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
     const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
 
     const isHomePage = !initialDepartmentId;
+    const displayName = worker?.preferred_given_name || worker?.given_name || "there";
 
     useEffect(() => {
         setSelectedDepartmentId(initialDepartmentId ?? "");
@@ -92,7 +95,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                     <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:px-8">
                         {headerContent || (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">
-                                {isHomePage ? "Departments" : ""}
+                                {isHomePage ? `Hello, ${displayName}` : ""}
                             </p>
                         )}
                     </div>
