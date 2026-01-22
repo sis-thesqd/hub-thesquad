@@ -10,7 +10,7 @@ import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { MultiSelect } from "@/components/base/select/multi-select";
-import type { SelectItemType } from "@/components/base/select/select";
+import { Select, type SelectItemType } from "@/components/base/select/select";
 import { NativeSelect } from "@/components/base/select/select-native";
 import { Dialog, DialogTrigger, Modal, ModalOverlay } from "@/components/application/modals/modal";
 import type { DirectoryEntry, Frame, RipplingDepartment } from "@/utils/supabase/types";
@@ -96,6 +96,9 @@ export const DirectoryApp = ({
     const [createPageOpen, setCreatePageOpen] = useState(false);
     const [editFolderOpen, setEditFolderOpen] = useState(false);
     const [editPageOpen, setEditPageOpen] = useState(false);
+    const [inlineFolderOpen, setInlineFolderOpen] = useState(false);
+    const [inlineFolderForm, setInlineFolderForm] = useState<FormState>(emptyForm);
+    const [inlineFolderLocation, setInlineFolderLocation] = useState<string>(""); // format: "departmentId:folderId" or "departmentId:root"
 
     const [folderForm, setFolderForm] = useState<FormState>(emptyForm);
     const [pageForm, setPageForm] = useState<FormState>(emptyForm);
@@ -350,10 +353,10 @@ export const DirectoryApp = ({
             .map((entry) => ({
                 id: entry.id,
                 label: entry.name,
-                supportingText: pathById.get(entry.id)?.join("/") ?? entry.slug,
+                supportingText: "/" + (pathById.get(entry.id)?.join("/") ?? entry.slug),
             }));
 
-        return [{ id: "root", label: "Top level" }, ...options];
+        return [{ id: "__create_new__", label: "+ Create new folder" }, ...options];
     }, [filteredEntries, pathById]);
 
     const parentOptions = useMemo(() => {
@@ -367,6 +370,35 @@ export const DirectoryApp = ({
                 })),
         ];
     }, [filteredEntries]);
+
+    // Combined department + folder options for inline folder creation
+    const inlineFolderLocationOptions = useMemo(() => {
+        const options: { id: string; label: string; supportingText?: string }[] = [];
+
+        departments.forEach((dept) => {
+            // Add department top level option
+            options.push({
+                id: `${dept.id}:root`,
+                label: dept.name ?? dept.id,
+                supportingText: "Top level",
+            });
+
+            // Add folders for this department (only if we have entries loaded for it)
+            const deptFolders = entries.filter(
+                (entry) => entry.department_id === dept.id && !entry.frame_id
+            );
+            deptFolders.forEach((folder) => {
+                const path = pathById.get(folder.id)?.join("/") ?? folder.slug;
+                options.push({
+                    id: `${dept.id}:${folder.id}`,
+                    label: folder.name,
+                    supportingText: `${dept.name} / ${path}`,
+                });
+            });
+        });
+
+        return options;
+    }, [departments, entries, pathById]);
 
     const activeParentId = activeEntry?.frame_id ? activeEntry.parent_id : activeEntry?.id ?? null;
 
@@ -394,6 +426,38 @@ export const DirectoryApp = ({
         setCreateFolderParentId(null);
         setCreateFolderOpen(false);
         await refreshData(selectedDepartmentId);
+    };
+
+    const handleInlineFolderCreate = async () => {
+        if (!inlineFolderLocation) return;
+        const name = inlineFolderForm.name.trim();
+        if (!name) return;
+
+        // Parse the combined location value: "departmentId:folderId" or "departmentId:root"
+        const [departmentId, parentId] = inlineFolderLocation.split(":");
+        const resolvedParentId = parentId === "root" ? null : parentId;
+
+        const slug = inlineFolderForm.slug.trim() || slugify(name);
+
+        const [newFolder] = await supabaseUpsert<DirectoryEntry[]>("sh_directory", {
+            department_id: departmentId,
+            parent_id: resolvedParentId,
+            frame_id: null,
+            name,
+            slug,
+        });
+
+        setInlineFolderForm(emptyForm);
+        setInlineFolderOpen(false);
+        await refreshData(selectedDepartmentId);
+
+        // Add the new folder to the placements selection
+        if (newFolder) {
+            pagePlacements.append({
+                id: newFolder.id,
+                label: newFolder.name,
+            });
+        }
     };
 
     const handleCreatePage = async (placementIds: string[]) => {
@@ -861,8 +925,18 @@ export const DirectoryApp = ({
                                         items={folderOptions}
                                         selectedItems={pagePlacements}
                                         placeholder="Pick folders"
+                                        onItemInserted={(key) => {
+                                            if (key === "__create_new__") {
+                                                pagePlacements.remove("__create_new__");
+                                                setInlineFolderForm(emptyForm);
+                                                setInlineFolderLocation(`${selectedDepartmentId}:root`);
+                                                setInlineFolderOpen(true);
+                                            }
+                                        }}
                                     >
-                                        {(item) => <MultiSelect.Item id={item.id}>{item.label}</MultiSelect.Item>}
+                                        {(item) => (
+                                            <MultiSelect.Item id={item.id} label={item.label} supportingText={item.supportingText} />
+                                        )}
                                     </MultiSelect>
                                 </div>
 
@@ -958,8 +1032,18 @@ export const DirectoryApp = ({
                                         items={folderOptions}
                                         selectedItems={pagePlacements}
                                         placeholder="Pick folders"
+                                        onItemInserted={(key) => {
+                                            if (key === "__create_new__") {
+                                                pagePlacements.remove("__create_new__");
+                                                setInlineFolderForm(emptyForm);
+                                                setInlineFolderLocation(`${selectedDepartmentId}:root`);
+                                                setInlineFolderOpen(true);
+                                            }
+                                        }}
                                     >
-                                        {(item) => <MultiSelect.Item id={item.id}>{item.label}</MultiSelect.Item>}
+                                        {(item) => (
+                                            <MultiSelect.Item id={item.id} label={item.label} supportingText={item.supportingText} />
+                                        )}
                                     </MultiSelect>
                                 </div>
 
@@ -968,6 +1052,57 @@ export const DirectoryApp = ({
                                         Cancel
                                     </Button>
                                     <Button onClick={() => activeFrame && handleUpdatePage(activeFrame, pagePlacements.items.map((item) => item.id))}>Save changes</Button>
+                                </div>
+                            </div>
+                        </Dialog>
+                    </Modal>
+                </ModalOverlay>
+            </DialogTrigger>
+
+            <DialogTrigger isOpen={inlineFolderOpen} onOpenChange={setInlineFolderOpen}>
+                <Button className="hidden" />
+                <ModalOverlay>
+                    <Modal className="max-w-xl">
+                        <Dialog className="w-full">
+                            <div className="w-full rounded-2xl bg-primary p-6 shadow-xl ring-1 ring-secondary_alt">
+                                <div className="mb-4">
+                                    <p className="text-lg font-semibold text-primary">Create folder</p>
+                                    <p className="text-sm text-tertiary">Create a new folder for this page.</p>
+                                </div>
+
+                                <div className="grid gap-4">
+                                    <Input
+                                        label="Folder name"
+                                        value={inlineFolderForm.name}
+                                        onChange={(value) => setInlineFolderForm((prev) => ({ ...prev, name: value }))}
+                                        placeholder="e.g. Reporting"
+                                    />
+                                    <Input
+                                        label="Slug"
+                                        value={inlineFolderForm.slug}
+                                        onChange={(value) => setInlineFolderForm((prev) => ({ ...prev, slug: value }))}
+                                        placeholder="auto-generated"
+                                    />
+                                    <Select.ComboBox
+                                        label="Location"
+                                        items={inlineFolderLocationOptions}
+                                        selectedKey={inlineFolderLocation}
+                                        onSelectionChange={(key) => setInlineFolderLocation(key as string)}
+                                        placeholder="Search locations"
+                                    >
+                                        {(item) => (
+                                            <Select.Item id={item.id} supportingText={item.supportingText}>
+                                                {item.label}
+                                            </Select.Item>
+                                        )}
+                                    </Select.ComboBox>
+                                </div>
+
+                                <div className="mt-6 flex justify-end gap-2">
+                                    <Button color="secondary" onClick={() => setInlineFolderOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button onClick={() => handleInlineFolderCreate()}>Create folder</Button>
                                 </div>
                             </div>
                         </Dialog>
