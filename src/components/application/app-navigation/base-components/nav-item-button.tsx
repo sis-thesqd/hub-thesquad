@@ -184,9 +184,10 @@ export const NavItemButton = ({
 
     const hasChildren = topLevelFolders.length > 0 || topLevelPages.length > 0;
     const showPopover = departmentId && isHovered && !isLoading && hasChildren;
+    const showTooltip = departmentId && isHovered && !isLoading && !hasChildren;
 
     return (
-        <div 
+        <div
             className="relative"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -207,7 +208,21 @@ export const NavItemButton = ({
                     <Icon aria-hidden="true" className={cx("shrink-0 transition-inherit-all", styles[size].icon)} />
                 </a>
             </Pressable>
-            
+
+            {/* Tooltip for departments with no children */}
+            {showTooltip && (
+                <div
+                    ref={popoverRef}
+                    className="fixed z-50 origin-left rounded-lg bg-primary px-3 py-2 shadow-lg ring-1 ring-secondary_alt animate-in fade-in slide-in-from-left-0.5 duration-150"
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                >
+                    <span className="whitespace-nowrap text-sm font-semibold text-secondary">
+                        {label}
+                    </span>
+                </div>
+            )}
+
             {showPopover && (
                 <div
                     ref={popoverRef}

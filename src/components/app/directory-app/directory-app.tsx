@@ -17,6 +17,7 @@ import {
     NoDepartmentState,
     DirectoryHeader,
     EmbeddedHeaderContent,
+    EmbeddedFolderHeader,
     IframeView,
     CreateFolderModal,
     EditFolderModal,
@@ -141,6 +142,7 @@ export const DirectoryApp = ({
     useEffect(() => {
         if (variant === "embedded" && onHeaderContentChange) {
             if (activeFrame && activeEntry) {
+                // Page view header
                 const handleEditClick = async () => {
                     setPageForm({
                         name: activeFrame.name,
@@ -185,7 +187,42 @@ export const DirectoryApp = ({
                     />
                 );
             } else {
-                onHeaderContentChange(null);
+                // Folder view header - show folder/department name and action buttons
+                const currentDepartment = departments.find((d) => d.id === selectedDepartmentId);
+                const folderName = activeEntry?.name ?? currentDepartment?.name ?? "Directory";
+                onHeaderContentChange(
+                    <EmbeddedFolderHeader
+                        folderName={folderName}
+                        showEditButton={!!activeEntry && !activeEntry.frame_id}
+                        onEditFolder={() => {
+                            if (!activeEntry) return;
+                            setFolderForm({
+                                ...emptyForm,
+                                name: activeEntry.name,
+                                slug: activeEntry.slug,
+                            });
+                            setEditFolderOpen(true);
+                        }}
+                        onNewFolder={() => {
+                            setFolderForm(emptyForm);
+                            setCreateFolderOpen(true);
+                        }}
+                        onNewPage={() => {
+                            setPageForm(emptyForm);
+                            replaceSelectedItems(pageDepartments, []);
+                            const parentId = activeEntry?.id ?? null;
+                            if (parentId) {
+                                const folder = entriesById.get(parentId);
+                                const label = folder?.name ?? "Current folder";
+                                replaceSelectedItems(pagePlacements, [{ id: parentId, label }]);
+                            } else {
+                                replaceSelectedItems(pagePlacements, []);
+                            }
+                            setError(null);
+                            setCreatePageOpen(true);
+                        }}
+                    />
+                );
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -507,8 +544,8 @@ export const DirectoryApp = ({
     return (
         <div className={outerClassName}>
             <main className={mainClassName}>
-                {/* Header with Actions - Only show when NOT viewing embedded page */}
-                {!activeFrame && (
+                {/* Header with Actions - Only show in full mode and when NOT viewing embedded page */}
+                {variant === "full" && !activeFrame && (
                     <DirectoryHeader
                         activeEntry={activeEntry}
                         onEditFolder={handleEditFolderClick}
@@ -582,11 +619,7 @@ export const DirectoryApp = ({
 
                             {/* Empty State */}
                             {visibleFolders.length === 0 && visiblePages.length === 0 && selectedDepartmentId && (
-                                <EmptyFolderState
-                                    activeEntry={activeEntry}
-                                    onNewFolder={handleNewFolderClick}
-                                    onNewPage={handleNewPageClick}
-                                />
+                                <EmptyFolderState activeEntry={activeEntry} />
                             )}
 
                             {/* No department selected */}

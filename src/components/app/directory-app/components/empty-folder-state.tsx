@@ -1,14 +1,11 @@
-import { Folder, Plus } from "@untitledui/icons";
-import { Button } from "@/components/base/buttons/button";
+import { Folder } from "@untitledui/icons";
 import type { DirectoryEntry } from "@/utils/supabase/types";
 
 type EmptyFolderStateProps = {
     activeEntry: DirectoryEntry | null;
-    onNewFolder: () => void;
-    onNewPage: () => void;
 };
 
-export const EmptyFolderState = ({ activeEntry, onNewFolder, onNewPage }: EmptyFolderStateProps) => {
+export const EmptyFolderState = ({ activeEntry }: EmptyFolderStateProps) => {
     return (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-secondary_alt bg-primary px-6 py-16 text-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-secondary">
@@ -22,24 +19,6 @@ export const EmptyFolderState = ({ activeEntry, onNewFolder, onNewPage }: EmptyF
                     ? "Add folders or pages to organize content inside this folder."
                     : "Create your first folder or page to get started."}
             </p>
-            <div className="mt-6 flex items-center gap-3">
-                <Button
-                    size="md"
-                    color="secondary"
-                    iconLeading={Plus}
-                    onClick={onNewFolder}
-                >
-                    New folder
-                </Button>
-                <Button
-                    size="md"
-                    color="primary"
-                    iconLeading={Plus}
-                    onClick={onNewPage}
-                >
-                    New page
-                </Button>
-            </div>
         </div>
     );
 };

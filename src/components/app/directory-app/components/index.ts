@@ -4,5 +4,6 @@ export { EmptyFolderState } from "./empty-folder-state";
 export { NoDepartmentState } from "./no-department-state";
 export { DirectoryHeader } from "./directory-header";
 export { EmbeddedHeaderContent } from "./embedded-header-content";
+export { EmbeddedFolderHeader } from "./embedded-folder-header";
 export { IframeView } from "./iframe-view";
 export * from "./modals";
