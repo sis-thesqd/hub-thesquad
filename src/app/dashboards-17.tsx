@@ -99,14 +99,14 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
     }, [departments]);
 
     return (
-        <div className="flex flex-col bg-primary lg:flex-row">
+        <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
             <SidebarNavigationSlim
                 hideBorder
                 activeUrl={selectedDepartmentId ? `/${selectedDepartmentId}` : undefined}
                 items={departmentItems}
             />
-            <main className="min-w-0 flex-1 lg:pt-2 lg:pl-1">
-                <div className="flex h-dvh flex-col gap-8 overflow-hidden border-secondary pt-8 pb-12 lg:rounded-tl-[24px] lg:border-t lg:border-l">
+            <main className="min-w-0 flex-1 overflow-hidden lg:pt-2 lg:pl-1">
+                <div className="flex h-full flex-col gap-8 overflow-hidden border-secondary pt-8 pb-12 lg:rounded-tl-[24px] lg:border-t lg:border-l">
                     <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:px-8">
                         {headerContent || (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">Department directory</p>
