@@ -3,30 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import type React from "react";
 import { useRouter } from "next/navigation";
-import {
-    Announcement03,
-    Briefcase01,
-    Building02,
-    Compass01,
-    CpuChip01,
-    Globe01,
-    MessageChatCircle,
-    Package,
-    Palette,
-    Repeat01,
-    Sale01,
-    SearchLg,
-    Share01,
-    Stars02,
-    Target01,
-    VideoRecorder,
-    FolderClosed,
-} from "@untitledui/icons";
+import { FolderClosed } from "@untitledui/icons";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
-import { Input } from "@/components/base/input/input";
 import { DirectoryApp } from "@/components/app/directory-app";
-import type { RipplingDepartment } from "@/utils/supabase/types";
+import type { NavigationPage, RipplingDepartment, ShConfig } from "@/utils/supabase/types";
 import { supabaseFetch } from "@/utils/supabase/rest";
+import { getIconByName } from "@/utils/icon-map";
+import { HomeGrid } from "./components/home-grid";
 
 interface Dashboard17Props {
     initialDepartmentId?: string;
@@ -36,8 +19,11 @@ interface Dashboard17Props {
 export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Props) => {
     const router = useRouter();
     const [departments, setDepartments] = useState<RipplingDepartment[]>([]);
+    const [navigationPages, setNavigationPages] = useState<NavigationPage[]>([]);
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
     const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
+
+    const isHomePage = !initialDepartmentId;
 
     useEffect(() => {
         setSelectedDepartmentId(initialDepartmentId ?? "");
@@ -46,15 +32,19 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
     useEffect(() => {
         let isMounted = true;
 
-        const loadDepartments = async () => {
+        const loadData = async () => {
             try {
-                const data = await supabaseFetch<RipplingDepartment[]>("rippling_departments?select=id,name&order=name.asc");
+                // Load departments and navigation config in parallel
+                const [deptData, configData] = await Promise.all([
+                    supabaseFetch<RipplingDepartment[]>("rippling_departments?select=id,name&order=name.asc"),
+                    supabaseFetch<ShConfig<NavigationPage[]>[]>("sh_config?key=eq.navigation_pages&select=value"),
+                ]);
+                
                 if (!isMounted) return;
-                setDepartments(data);
-                if (data.length > 0 && !initialDepartmentId) {
-                    const firstId = data[0].id;
-                    setSelectedDepartmentId(firstId);
-                    router.replace(`/${firstId}`);
+                setDepartments(deptData);
+                
+                if (configData?.[0]?.value) {
+                    setNavigationPages(configData[0].value);
                 }
             } catch {
                 if (!isMounted) return;
@@ -62,41 +52,33 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
             }
         };
 
-        void loadDepartments();
+        void loadData();
 
         return () => {
             isMounted = false;
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router, initialDepartmentId]);
 
     const departmentItems = useMemo(() => {
-        const iconFor = (name?: string | null) => {
-            const value = name?.toLowerCase() ?? "";
-            if (value.includes("brand")) return Stars02;
-            if (value.includes("creative direction")) return Compass01;
-            if (value.includes("creative products")) return Package;
-            if (value.includes("c-suite")) return Building02;
-            if (value.includes("customer experience")) return MessageChatCircle;
-            if (value.includes("design")) return Palette;
-            if (value.includes("exec")) return Briefcase01;
-            if (value.includes("marketing")) return Announcement03;
-            if (value.includes("remix")) return Repeat01;
-            if (value.includes("sales")) return Sale01;
-            if (value.includes("social media")) return Share01;
-            if (value.includes("strategy")) return Target01;
-            if (value.includes("systems integration")) return CpuChip01;
-            if (value.includes("video")) return VideoRecorder;
-            if (value.includes("web")) return Globe01;
-            return FolderClosed;
-        };
+        // Map navigation pages to departments
+        return navigationPages.map((page) => {
+            // Find matching department by comparing slugified name
+            const department = departments.find((dept) => {
+                const deptSlug = dept.name
+                    ?.toLowerCase()
+                    .trim()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/(^-|-$)+/g, "");
+                return deptSlug === page.slug;
+            });
 
-        return departments.map((department) => ({
-            label: department.name ?? department.id,
-            href: `/${department.id}`,
-            icon: iconFor(department.name),
-        }));
-    }, [departments]);
+            return {
+                label: page.title,
+                href: department ? `/${department.id}` : "#",
+                icon: getIconByName(page.icon, FolderClosed),
+            };
+        }).filter((item) => item.href !== "#");
+    }, [departments, navigationPages]);
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
@@ -109,19 +91,25 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                 <div className="flex h-full flex-col gap-8 overflow-hidden border-secondary pt-8 pb-12 lg:rounded-tl-[24px] lg:border-t lg:border-l">
                     <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:px-8">
                         {headerContent || (
-                            <p className="text-xl font-semibold text-primary lg:text-display-xs">Department directory</p>
+                            <p className="text-xl font-semibold text-primary lg:text-display-xs">
+                                {isHomePage ? "Departments" : "Department directory"}
+                            </p>
                         )}
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-hidden px-4 lg:px-8">
-                        <DirectoryApp
-                            initialDepartmentId={selectedDepartmentId || initialDepartmentId}
-                            initialPath={initialPath}
-                            variant="embedded"
-                            showDepartments={false}
-                            departmentsOverride={departments}
-                            onHeaderContentChange={setHeaderContent}
-                        />
+                    <div className="min-h-0 flex-1 overflow-auto px-4 lg:px-8">
+                        {isHomePage ? (
+                            <HomeGrid departments={departments} />
+                        ) : (
+                            <DirectoryApp
+                                initialDepartmentId={selectedDepartmentId || initialDepartmentId}
+                                initialPath={initialPath}
+                                variant="embedded"
+                                showDepartments={false}
+                                departmentsOverride={departments}
+                                onHeaderContentChange={setHeaderContent}
+                            />
+                        )}
                     </div>
                 </div>
             </main>

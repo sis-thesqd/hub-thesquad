@@ -25,3 +25,17 @@ export type DirectoryPlacement = {
     id: string;
     parent_id: string | null;
 };
+
+export type NavigationPage = {
+    slug: string;
+    title: string;
+    icon: string;
+};
+
+export type ShConfig<T = unknown> = {
+    id: string;
+    key: string;
+    value: T;
+    created_at: string;
+    updated_at: string;
+};

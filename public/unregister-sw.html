@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Unregister Service Worker</title>
+</head>
+<body>
+    <h1>Unregistering Service Worker...</h1>
+    <div id="status">Working...</div>
+    
+    <script>
+        async function unregisterServiceWorkers() {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                
+                if (registrations.length === 0) {
+                    document.getElementById('status').innerHTML = '<p style="color: green;">No service workers found.</p>';
+                    return;
+                }
+                
+                let unregisteredCount = 0;
+                for (let registration of registrations) {
+                    const success = await registration.unregister();
+                    if (success) {
+                        unregisteredCount++;
+                        console.log('Unregistered:', registration);
+                    }
+                }
+                
+                // Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    console.log('Cleared caches:', cacheNames);
+                }
+                
+                document.getElementById('status').innerHTML = `
+                    <p style="color: green;">✓ Unregistered ${unregisteredCount} service worker(s)</p>
+                    <p style="color: green;">✓ Cleared all caches</p>
+                    <p>Please close ALL tabs with localhost:3000 and reopen the app.</p>
+                    <button onclick="window.location.href='/'">Go to Home</button>
+                `;
+            } else {
+                document.getElementById('status').innerHTML = '<p style="color: red;">Service workers not supported</p>';
+            }
+        }
+        
+        unregisterServiceWorkers();
+    </script>
+</body>
+</html>

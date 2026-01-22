@@ -306,7 +306,6 @@ export const DirectoryApp = ({
                             <Button
                                 size="sm"
                                 color="tertiary"
-                                iconLeading={Edit01}
                                 onClick={handleEditClick}
                             >
                                 Edit
@@ -315,7 +314,6 @@ export const DirectoryApp = ({
                                 <Button
                                     size="sm"
                                     color="primary"
-                                    iconLeading={Share01}
                                 >
                                     Share
                                 </Button>
@@ -344,7 +342,7 @@ export const DirectoryApp = ({
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [variant, onHeaderContentChange, activeFrame, activeEntry]);
+    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, entries, selectedDepartmentId, entriesById]);
 
     const folderOptions = useMemo(() => {
         const options = filteredEntries
@@ -407,11 +405,17 @@ export const DirectoryApp = ({
 
         const slug = pageForm.slug.trim() || slugify(name);
 
+        // Always include the current department in visibility
+        const selectedDeptIds = pageDepartments.items.map((item) => item.id);
+        const departmentIds = selectedDeptIds.includes(selectedDepartmentId)
+            ? selectedDeptIds
+            : [selectedDepartmentId, ...selectedDeptIds];
+
         const [frame] = await supabaseUpsert<Frame[]>("sh_frames", {
             name,
             iframe_url: iframeUrl,
             description: pageForm.description.trim() || null,
-            department_ids: pageDepartments.items.map((item) => item.id),
+            department_ids: departmentIds,
         });
 
         const placements = placementIds.length ? placementIds : ["root"];

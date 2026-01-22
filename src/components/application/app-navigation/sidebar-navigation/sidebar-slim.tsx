@@ -10,7 +10,6 @@ import { AvatarLabelGroup } from "@/components/base/avatar/avatar-label-group";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { UntitledLogo } from "@/components/foundations/logo/untitledui-logo";
-import { UntitledLogoMinimal } from "@/components/foundations/logo/untitledui-logo-minimal";
 import { cx } from "@/utils/cx";
 import { MobileNavigationHeader } from "../base-components/mobile-header";
 import { NavAccountMenu } from "../base-components/nav-account-card";
@@ -60,22 +59,27 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                 )}
             >
                 <div className="flex justify-center px-3">
-                    <UntitledLogoMinimal className="size-8" />
+                    <img src="/sqd-badge.png" alt="Squad Logo" className="w-16" />
                 </div>
 
                 <ul className="mt-4 flex flex-col gap-0.5 px-3">
-                    {items.map((item) => (
-                        <li key={item.label}>
-                            <NavItemButton
-                                size="md"
-                                current={currentItem?.href === item.href}
-                                href={item.href}
-                                label={item.label || ""}
-                                icon={item.icon}
-                                onClick={() => setCurrentItem(item)}
-                            />
-                        </li>
-                    ))}
+                    {items.map((item) => {
+                        // Extract department ID from href (format: /{departmentId})
+                        const departmentId = item.href?.replace(/^\//, "") || undefined;
+                        return (
+                            <li key={item.label}>
+                                <NavItemButton
+                                    size="md"
+                                    current={currentItem?.href === item.href}
+                                    href={item.href}
+                                    label={item.label || ""}
+                                    icon={item.icon}
+                                    onClick={() => setCurrentItem(item)}
+                                    departmentId={departmentId}
+                                />
+                            </li>
+                        );
+                    })}
                 </ul>
                 <div className="mt-auto flex flex-col gap-4 px-3 py-5">
                     {footerItems.length > 0 && (
