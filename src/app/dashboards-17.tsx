@@ -104,13 +104,13 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                 items={departmentItems}
             />
             <main className="min-w-0 flex-1 lg:pt-2 lg:pl-1">
-                <div className="flex min-h-dvh flex-col gap-8 border-secondary pt-8 pb-12 lg:rounded-tl-[24px] lg:border-t lg:border-l">
+                <div className="flex h-dvh flex-col gap-8 overflow-hidden border-secondary pt-8 pb-12 lg:rounded-tl-[24px] lg:border-t lg:border-l">
                     <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:px-8">
                         <p className="text-xl font-semibold text-primary lg:text-display-xs">Department directory</p>
                         <Input size="sm" shortcut aria-label="Search" placeholder="Search" icon={SearchLg} className="lg:max-w-80" />
                     </div>
 
-                    <div className="px-4 lg:px-8">
+                    <div className="min-h-0 flex-1 overflow-hidden px-4 lg:px-8">
                         <DirectoryApp
                             initialDepartmentId={selectedDepartmentId || initialDepartmentId}
                             initialPath={initialPath}

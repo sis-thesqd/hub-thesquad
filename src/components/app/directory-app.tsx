@@ -433,80 +433,43 @@ export const DirectoryApp = ({
         return activeChildren.filter((entry) => entry.frame_id);
     }, [activeChildren]);
 
-    const outerClassName = variant === "full" ? "min-h-dvh bg-primary" : "w-full";
-    const mainClassName = variant === "full" ? "flex min-h-dvh flex-col" : "flex min-h-0 flex-col";
+    const outerClassName = variant === "full" ? "min-h-dvh bg-primary" : "w-full h-full";
+    const mainClassName = variant === "full" ? "flex min-h-dvh flex-col" : "flex h-full min-h-0 flex-col";
 
     return (
         <div className={outerClassName}>
             <main className={mainClassName}>
-                {/* Header with Actions */}
-                <header className="flex flex-wrap items-center justify-between gap-4 px-6 py-5">
-                    <div>
-                        <h1 className="text-xl font-semibold text-primary">
-                            {activeEntry?.name ?? "Directory"}
-                        </h1>
-                        <p className="mt-0.5 text-sm text-tertiary">
-                            {activeEntry?.frame_id
-                                ? "Embedded page"
-                                : visibleFolders.length > 0 || visiblePages.length > 0
+                {/* Header with Actions - Only show when NOT viewing embedded page */}
+                {!activeFrame && (
+                    <header className="flex flex-wrap items-center justify-between gap-4 px-6 py-5">
+                        <div>
+                            <h1 className="text-xl font-semibold text-primary">
+                                {activeEntry?.name ?? "Directory"}
+                            </h1>
+                            <p className="mt-0.5 text-sm text-tertiary">
+                                {visibleFolders.length > 0 || visiblePages.length > 0
                                     ? `${visibleFolders.length} folders, ${visiblePages.length} pages`
                                     : "No items yet"}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {activeEntry && !activeEntry.frame_id && (
-                            <Button
-                                size="sm"
-                                color="tertiary"
-                                iconLeading={Edit01}
-                                onClick={() => {
-                                    setFolderForm({
-                                        ...emptyForm,
-                                        name: activeEntry.name,
-                                        slug: activeEntry.slug,
-                                    });
-                                    setEditFolderOpen(true);
-                                }}
-                            >
-                                Edit
-                            </Button>
-                        )}
-                        {activeEntry?.frame_id && activeFrame && (
-                            <Button
-                                size="sm"
-                                color="tertiary"
-                                iconLeading={Edit01}
-                                onClick={() => {
-                                    setPageForm({
-                                        name: activeFrame.name,
-                                        slug: activeEntry.slug,
-                                        iframeUrl: activeFrame.iframe_url,
-                                        description: activeFrame.description ?? "",
-                                    });
-                                    replaceSelectedItems(
-                                        pageDepartments,
-                                        activeFrame.department_ids.map((id) => ({
-                                            id,
-                                            label: departments.find((dept) => dept.id === id)?.name ?? id,
-                                        })),
-                                    );
-                                    const placements = entries
-                                        .filter((entry) => entry.frame_id === activeFrame.id && entry.department_id === selectedDepartmentId)
-                                        .map((entry) => entry.parent_id ?? "root");
-                                    replaceSelectedItems(
-                                        pagePlacements,
-                                        placements.map((id) => ({
-                                            id,
-                                            label: id === "root" ? "Top level" : entriesById.get(id)?.name ?? id,
-                                        })),
-                                    );
-                                    setEditPageOpen(true);
-                                }}
-                            >
-                                Edit
-                            </Button>
-                        )}
-                        {!activeFrame && (
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {activeEntry && !activeEntry.frame_id && (
+                                <Button
+                                    size="sm"
+                                    color="tertiary"
+                                    iconLeading={Edit01}
+                                    onClick={() => {
+                                        setFolderForm({
+                                            ...emptyForm,
+                                            name: activeEntry.name,
+                                            slug: activeEntry.slug,
+                                        });
+                                        setEditFolderOpen(true);
+                                    }}
+                                >
+                                    Edit
+                                </Button>
+                            )}
                             <>
                                 <Button
                                     size="sm"
@@ -539,12 +502,12 @@ export const DirectoryApp = ({
                                     New page
                                 </Button>
                             </>
-                        )}
-                    </div>
-                </header>
+                        </div>
+                    </header>
+                )}
 
                 {/* Content */}
-                <section className="flex-1 px-6 pb-8">
+                <section className={`flex min-h-0 flex-1 flex-col overflow-hidden ${activeFrame ? "" : "px-6 pb-8"}`}>
                     {error && (
                         <div className="mb-4 rounded-lg border border-error_subtle bg-error_primary/10 px-4 py-3 text-sm text-error_primary">
                             {error}
@@ -554,12 +517,48 @@ export const DirectoryApp = ({
 
                     {/* Embedded Page View */}
                     {!isLoading && activeFrame && (
-                        <div className="flex h-[calc(100vh-200px)] flex-col overflow-hidden rounded-2xl border border-secondary_alt bg-primary">
-                            <div className="flex items-center justify-between border-b border-secondary_alt px-4 py-3">
+                        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-secondary_alt bg-primary">
+                            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-secondary_alt px-4 py-3 lg:px-8">
                                 <div>
-                                    <p className="text-sm font-semibold text-primary">{activeFrame.name}</p>
-                                    {activeFrame.description && (
-                                        <p className="text-xs text-tertiary">{activeFrame.description}</p>
+                                    <h1 className="text-xl font-semibold text-primary">
+                                        {activeEntry?.name ?? "Directory"}
+                                    </h1>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {activeEntry?.frame_id && activeFrame && (
+                                        <Button
+                                            size="sm"
+                                            color="tertiary"
+                                            iconLeading={Edit01}
+                                            onClick={() => {
+                                                setPageForm({
+                                                    name: activeFrame.name,
+                                                    slug: activeEntry.slug,
+                                                    iframeUrl: activeFrame.iframe_url,
+                                                    description: activeFrame.description ?? "",
+                                                });
+                                                replaceSelectedItems(
+                                                    pageDepartments,
+                                                    activeFrame.department_ids.map((id) => ({
+                                                        id,
+                                                        label: departments.find((dept) => dept.id === id)?.name ?? id,
+                                                    })),
+                                                );
+                                                const placements = entries
+                                                    .filter((entry) => entry.frame_id === activeFrame.id && entry.department_id === selectedDepartmentId)
+                                                    .map((entry) => entry.parent_id ?? "root");
+                                                replaceSelectedItems(
+                                                    pagePlacements,
+                                                    placements.map((id) => ({
+                                                        id,
+                                                        label: id === "root" ? "Top level" : entriesById.get(id)?.name ?? id,
+                                                    })),
+                                                );
+                                                setEditPageOpen(true);
+                                            }}
+                                        >
+                                            Edit
+                                        </Button>
                                     )}
                                 </div>
                             </div>
