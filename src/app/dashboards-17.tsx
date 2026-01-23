@@ -399,7 +399,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                                 navigationPages={navigationPages}
                                 onToggleFavorite={(entryId, departmentId) => toggleFavorite(entryId, departmentId)}
                                 isLoading={isFavoritesLoading || isDirectoryLoading}
-                                hasLoaded={hasFavoritesLoaded && !isDirectoryLoading}
+                                hasLoaded={hasFavoritesLoaded}
                             />
                         ) : isHomePage ? (
                             <>

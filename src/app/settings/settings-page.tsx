@@ -164,7 +164,7 @@ export const SettingsPage = () => {
             }
 
             // Invalidate the navigation pages query to refetch
-            queryClient.invalidateQueries({ queryKey: directoryKeys.navigationPages() });
+            queryClient.invalidateQueries({ queryKey: directoryKeys.combined() });
             setHasChanges(false);
         } catch (err) {
             console.error("Failed to save navigation pages:", err);

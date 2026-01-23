@@ -8,8 +8,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { cx } from "@/utils/cx";
-import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
-import { supabaseFetch } from "@/utils/supabase/rest";
+import type { DirectoryEntry } from "@/utils/supabase/types";
 
 const styles = {
     md: {
@@ -66,11 +65,12 @@ export const NavItemButton = ({
     const { data: children = [], isLoading } = useQuery({
         queryKey: ["department-children", departmentId],
         queryFn: async () => {
-            const filter = `department_id=eq.${encodeURIComponent(departmentId!)}`;
-            return supabaseFetch<DirectoryEntry[]>(
-                `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&${filter}&order=sort_order.asc.nullslast,name.asc`,
-                { skipCache: true }
-            );
+            const response = await fetch(`/api/directory/children?departmentId=${encodeURIComponent(departmentId!)}`);
+            if (!response.ok) {
+                throw new Error("Failed to fetch department children");
+            }
+            const data = await response.json();
+            return data.entries as DirectoryEntry[];
         },
         enabled: isHovered && Boolean(departmentId),
         staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes

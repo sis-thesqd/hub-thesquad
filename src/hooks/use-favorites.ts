@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabaseFetch } from "@/utils/supabase/rest";
 import type { ShFavorite } from "@/utils/supabase/types";
 import { toggleFavorite as toggleFavoriteAction } from "@/app/api/directory/actions";
 
@@ -17,10 +16,12 @@ export const favoritesKeys = {
 };
 
 export const fetchFavorites = async (userId: string): Promise<ShFavorite[]> => {
-    return supabaseFetch<ShFavorite[]>(
-        `sh_favorites?user_id=eq.${encodeURIComponent(userId)}&select=*&order=created_at.desc`,
-        { skipCache: true }
-    );
+    const response = await fetch(`/api/favorites?userId=${encodeURIComponent(userId)}`);
+    if (!response.ok) {
+        throw new Error("Failed to fetch favorites");
+    }
+    const data = await response.json();
+    return data.favorites ?? [];
 };
 
 export const useFavorites = ({ userId }: UseFavoritesOptions) => {

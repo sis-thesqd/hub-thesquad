@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { Star01 } from "@untitledui/icons";
-import { useQueryClient } from "@tanstack/react-query";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { Badge } from "@/components/base/badges/badges";
 import type { DirectoryEntry, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
-import { supabaseFetch } from "@/utils/supabase/rest";
 import { getIconByName } from "@/utils/icon-map";
 import { cx } from "@/utils/cx";
 
@@ -21,22 +19,6 @@ interface HomeGridProps {
 
 export const HomeGrid = ({ departments, navigationPages, entries, userDepartmentId, favoriteDepartmentIds = [], onToggleFavorite }: HomeGridProps) => {
     const appendUrlParams = useAppendUrlParams();
-    const queryClient = useQueryClient();
-
-    // Prefetch department children on hover for instant navigation
-    const handleMouseEnter = (departmentId: string) => {
-        queryClient.prefetchQuery({
-            queryKey: ["department-children", departmentId],
-            queryFn: async () => {
-                const filter = `department_id=eq.${encodeURIComponent(departmentId)}`;
-                return supabaseFetch<DirectoryEntry[]>(
-                    `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&${filter}&order=sort_order.asc.nullslast,name.asc`,
-                    { skipCache: true }
-                );
-            },
-            staleTime: 5 * 60 * 1000,
-        });
-    };
 
     // Calculate folder and page counts per department
     const countsByDepartment = entries.reduce(
@@ -89,7 +71,6 @@ export const HomeGrid = ({ departments, navigationPages, entries, userDepartment
                     <Link
                         key={item.slug}
                         href={href}
-                        onMouseEnter={() => item.departmentId && handleMouseEnter(item.departmentId)}
                         className="group flex items-center gap-4 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
                     >
                         <div className="flex size-12 items-center justify-center rounded-lg bg-secondary">
