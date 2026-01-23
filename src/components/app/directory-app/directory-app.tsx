@@ -107,12 +107,22 @@ export const DirectoryApp = ({
         } else if (initialModalAction === "page") {
             setPageForm({ ...emptyForm, emoji: getRandomEmoji() });
             clearSelectedItems(pagePlacements);
-            clearSelectedItems(pageDepartments);
+            // Prefill with user's department if available
+            if (worker?.department_id) {
+                const userDept = departmentItems.find((d) => d.id === worker.department_id);
+                if (userDept) {
+                    replaceSelectedItems(pageDepartments, [{ id: userDept.id, label: userDept.label, icon: userDept.icon }]);
+                } else {
+                    clearSelectedItems(pageDepartments);
+                }
+            } else {
+                clearSelectedItems(pageDepartments);
+            }
             setCreatePageOpen(true);
         }
 
         onModalActionHandled?.();
-    }, [initialModalAction, selectedDepartmentId, clearSelectedItems, pagePlacements, pageDepartments, onModalActionHandled]);
+    }, [initialModalAction, selectedDepartmentId, clearSelectedItems, replaceSelectedItems, pagePlacements, pageDepartments, departmentItems, worker?.department_id, onModalActionHandled]);
 
     const folderOptions = useMemo(() => {
         const options = allFolders.map((folder) => {

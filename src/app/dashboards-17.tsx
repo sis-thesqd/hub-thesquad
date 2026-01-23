@@ -170,8 +170,15 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
         while (homePagePlacements.items.length > 0) {
             homePagePlacements.remove(homePagePlacements.items[0].id);
         }
+        // Prefill with user's department if available
+        if (worker?.department_id) {
+            const userDept = homeDepartmentItems.find((d) => d.id === worker.department_id);
+            if (userDept) {
+                homePageDepartments.append({ id: userDept.id, label: userDept.label, icon: userDept.icon });
+            }
+        }
         setHomeCreatePageOpen(true);
-    }, [homePageDepartments, homePagePlacements]);
+    }, [homePageDepartments, homePagePlacements, worker?.department_id, homeDepartmentItems]);
 
     const handleHomeCreateFolder = useCallback(async () => {
         if (!homeFolderForm.name || homePagePlacements.items.length === 0) return;
