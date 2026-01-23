@@ -26,7 +26,8 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
     const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
 
     const isHomePage = !initialDepartmentId;
-    const displayName = worker?.preferred_given_name || worker?.given_name || "there";
+    const firstName = worker?.preferred_given_name || worker?.given_name || "there";
+    console.log(worker)
 
     useEffect(() => {
         setSelectedDepartmentId(initialDepartmentId ?? "");
@@ -95,7 +96,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                     <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:px-8">
                         {headerContent || (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">
-                                {isHomePage ? `Hello, ${displayName}` : ""}
+                                {isHomePage ? `Hello, ${firstName}` : ""}
                             </p>
                         )}
                     </div>
@@ -110,6 +111,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                                 variant="embedded"
                                 showDepartments={false}
                                 departmentsOverride={departments}
+                                navigationPages={navigationPages}
                                 onHeaderContentChange={setHeaderContent}
                             />
                         )}

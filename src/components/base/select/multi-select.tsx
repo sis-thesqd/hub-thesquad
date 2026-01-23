@@ -1,7 +1,7 @@
 "use client";
 
 import type { FocusEventHandler, KeyboardEvent, PointerEventHandler, RefAttributes, RefObject } from "react";
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { SearchLg } from "@untitledui/icons";
 import { FocusScope, useFilter, useFocusManager } from "react-aria";
 import type { ComboBoxProps as AriaComboBoxProps, GroupProps as AriaGroupProps, ListBoxProps as AriaListBoxProps, Key } from "react-aria-components";
@@ -90,6 +90,41 @@ export const MultiSelectBase = ({
         initialItems: items,
         filter,
     });
+
+    // Sync items when the items prop changes (e.g., new folder created)
+    const itemsKey = items?.map((i) => i.id).join(",") ?? "";
+    useEffect(() => {
+        if (!items) return;
+        // Get current item ids
+        const currentIds = new Set(accessibleList.items.map((i) => i.id));
+        const newIds = new Set(items.map((i) => i.id));
+
+        // Add new items
+        items.forEach((item) => {
+            if (!currentIds.has(item.id)) {
+                accessibleList.append(item);
+            }
+        });
+
+        // Remove deleted items
+        accessibleList.items.forEach((item) => {
+            if (!newIds.has(item.id)) {
+                accessibleList.remove(item.id);
+            }
+        });
+
+        // Re-apply filter
+        accessibleList.setFilterText(accessibleList.filterText);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [itemsKey]);
+
+    // Re-apply filter when selectedKeys changes (e.g., when items are removed)
+    const selectedKeysKey = selectedKeys.join(",");
+    useEffect(() => {
+        // Trigger re-filter by setting the same filter text
+        accessibleList.setFilterText(accessibleList.filterText);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedKeysKey]);
 
     const onRemove = useCallback(
         (keys: Set<Key>) => {
@@ -268,7 +303,20 @@ const InnerMultiSelect = ({ isDisabled, shortcut, shortcutClassName, placeholder
             {!isSelectionEmpty &&
                 comboBoxContext?.selectedItems?.items?.map((value) => (
                     <span key={value.id} className="flex items-center rounded-md bg-primary py-0.5 pr-1 pl-1.25 ring-1 ring-primary ring-inset">
-                        <Avatar size="xxs" alt={value?.label} src={value?.avatarUrl} />
+                        {value?.emoji ? (
+                            <span className="text-sm">{value.emoji}</span>
+                        ) : value?.icon ? (
+                            (() => {
+                                const Icon = value.icon;
+                                return typeof Icon === "function" ? (
+                                    <Icon className="size-4 text-fg-quaternary" />
+                                ) : (
+                                    Icon
+                                );
+                            })()
+                        ) : (
+                            <Avatar size="xxs" alt={value?.label} src={value?.avatarUrl} />
+                        )}
 
                         <p className="ml-1.25 truncate text-sm font-medium whitespace-nowrap text-secondary select-none">{value?.label}</p>
 

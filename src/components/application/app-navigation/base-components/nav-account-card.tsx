@@ -8,7 +8,8 @@ import { ChevronSelectorVertical, LogOut01, Monitor01, Moon01, Sun } from "@unti
 import { useTheme } from "next-themes";
 import { useFocusManager } from "react-aria";
 import type { DialogProps as AriaDialogProps } from "react-aria-components";
-import { Button as AriaButton, Dialog as AriaDialog, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
+import { Button as AriaButton, Dialog as AriaDialog, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover, OverlayTriggerStateContext } from "react-aria-components";
+import { useContext } from "react";
 import { AvatarLabelGroup } from "@/components/base/avatar/avatar-label-group";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { useAuth } from "@/providers/auth-provider";
@@ -28,8 +29,10 @@ export const NavAccountMenu = ({
     const focusManager = useFocusManager();
     const dialogRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
-    const { signOut } = useAuth();
+    const { signOut, worker } = useAuth();
     const { theme, setTheme } = useTheme();
+
+    const fullName = [worker?.given_name, worker?.family_name].filter(Boolean).join(" ") || "User";
 
     const handleSignOut = useCallback(async () => {
         await signOut();
@@ -95,7 +98,10 @@ export const NavAccountMenu = ({
                 </div>
             </div>
 
-            <div className="pt-1 pb-1.5">
+            <div className="flex flex-col gap-0.5 pt-1 pb-1.5">
+                <div className="px-3 py-2">
+                    <p className="text-sm font-semibold text-primary">{fullName}</p>
+                </div>
                 <NavAccountCardMenuItem label="Sign out" icon={LogOut01} shortcut="⌥⇧Q" onClick={handleSignOut} />
             </div>
         </AriaDialog>
@@ -139,6 +145,11 @@ const NavAccountCardMenuItem = ({
     );
 };
 
+const NavAccountMenuWrapper = () => {
+    const state = useContext(OverlayTriggerStateContext);
+    return <NavAccountMenu onClose={() => state?.close()} />;
+};
+
 export const NavAccountCard = ({
     popoverPlacement,
 }: {
@@ -180,7 +191,7 @@ export const NavAccountCard = ({
                             )
                         }
                     >
-                        {({ close }) => <NavAccountMenu onClose={close} />}
+                        <NavAccountMenuWrapper />
                     </AriaPopover>
                 </AriaDialogTrigger>
             </div>

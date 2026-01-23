@@ -11,6 +11,7 @@ export type DirectoryEntry = {
     name: string;
     slug: string;
     sort_order: number | null;
+    emoji: string | null;
 };
 
 export type Frame = {

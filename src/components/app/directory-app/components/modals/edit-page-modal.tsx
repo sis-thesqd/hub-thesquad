@@ -1,12 +1,15 @@
+import { useState, useEffect } from "react";
+import type { FC } from "react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Dialog, DialogTrigger, Modal, ModalOverlay } from "@/components/application/modals/modal";
 import type { SelectItemType } from "@/components/base/select/select";
-import type { RipplingDepartment } from "@/utils/supabase/types";
 import type { FormState } from "../../types";
 import { useListData } from "react-stately";
+import { EmojiPickerField } from "../emoji-picker-field";
+import { slugify } from "../../utils";
 
 type FolderOption = {
     id: string;
@@ -14,12 +17,18 @@ type FolderOption = {
     supportingText?: string;
 };
 
+type DepartmentItem = {
+    id: string;
+    label: string;
+    icon: FC<{ className?: string }>;
+};
+
 type EditPageModalProps = {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     form: FormState;
     onFormChange: (form: FormState) => void;
-    departments: RipplingDepartment[];
+    departmentItems: DepartmentItem[];
     pageDepartments: ReturnType<typeof useListData<SelectItemType>>;
     folderOptions: FolderOption[];
     pagePlacements: ReturnType<typeof useListData<SelectItemType>>;
@@ -32,13 +41,42 @@ export const EditPageModal = ({
     onOpenChange,
     form,
     onFormChange,
-    departments,
+    departmentItems,
     pageDepartments,
     folderOptions,
     pagePlacements,
     onFolderSelected,
     onSubmit,
 }: EditPageModalProps) => {
+    // For edit mode, slug starts as manually edited (pre-populated with existing value)
+    const [slugManuallyEdited, setSlugManuallyEdited] = useState(true);
+
+    // Reset to manually edited when modal opens (since it's pre-populated)
+    useEffect(() => {
+        if (isOpen) {
+            setSlugManuallyEdited(true);
+        }
+    }, [isOpen]);
+
+    const handleNameChange = (value: string) => {
+        if (!slugManuallyEdited) {
+            onFormChange({ ...form, name: value, slug: slugify(value) });
+        } else {
+            onFormChange({ ...form, name: value });
+        }
+    };
+
+    const handleSlugChange = (value: string) => {
+        // If user clears the slug, allow auto-generation again
+        if (value === "") {
+            setSlugManuallyEdited(false);
+            onFormChange({ ...form, slug: slugify(form.name) });
+        } else {
+            setSlugManuallyEdited(true);
+            onFormChange({ ...form, slug: value });
+        }
+    };
+
     return (
         <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
             <Button className="hidden" />
@@ -50,15 +88,19 @@ export const EditPageModal = ({
                                 <p className="text-lg font-semibold text-primary">Edit page</p>
                             </div>
                             <div className="grid gap-4">
+                                <EmojiPickerField
+                                    value={form.emoji}
+                                    onChange={(emoji) => onFormChange({ ...form, emoji })}
+                                />
                                 <Input
                                     label="Page name"
                                     value={form.name}
-                                    onChange={(value) => onFormChange({ ...form, name: value })}
+                                    onChange={handleNameChange}
                                 />
                                 <Input
                                     label="Slug"
                                     value={form.slug}
-                                    onChange={(value) => onFormChange({ ...form, slug: value })}
+                                    onChange={handleSlugChange}
                                 />
                                 <Input
                                     label="Iframe URL"
@@ -72,10 +114,7 @@ export const EditPageModal = ({
                                 />
                                 <MultiSelect
                                     label="Visible to departments"
-                                    items={departments.map((department) => ({
-                                        id: department.id,
-                                        label: department.name ?? department.id,
-                                    }))}
+                                    items={departmentItems}
                                     selectedItems={pageDepartments}
                                     placeholder="Search departments"
                                 >

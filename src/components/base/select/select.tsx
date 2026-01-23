@@ -20,7 +20,8 @@ export type SelectItemType = {
     avatarUrl?: string;
     isDisabled?: boolean;
     supportingText?: string;
-    icon?: FC | ReactNode;
+    icon?: FC<{ className?: string }> | ReactNode;
+    emoji?: string;
 };
 
 export interface CommonProps {

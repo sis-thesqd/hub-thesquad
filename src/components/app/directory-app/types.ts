@@ -1,5 +1,5 @@
 import type React from "react";
-import type { RipplingDepartment } from "@/utils/supabase/types";
+import type { NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 
 export type DirectoryAppProps = {
     initialDepartmentId?: string;
@@ -7,6 +7,7 @@ export type DirectoryAppProps = {
     variant?: "full" | "embedded";
     showDepartments?: boolean;
     departmentsOverride?: RipplingDepartment[];
+    navigationPages?: NavigationPage[];
     onHeaderContentChange?: (content: React.ReactNode | null) => void;
 };
 
@@ -15,4 +16,5 @@ export type FormState = {
     slug: string;
     iframeUrl: string;
     description: string;
+    emoji: string;
 };

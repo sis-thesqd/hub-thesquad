@@ -1,8 +1,11 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
 import { Dialog, DialogTrigger, Modal, ModalOverlay } from "@/components/application/modals/modal";
 import type { FormState } from "../../types";
+import { EmojiPickerField } from "../emoji-picker-field";
+import { slugify } from "../../utils";
 
 type LocationOption = {
     id: string;
@@ -31,6 +34,28 @@ export const InlineFolderModal = ({
     onLocationChange,
     onSubmit,
 }: InlineFolderModalProps) => {
+    const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+
+    // Reset manual edit flag when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setSlugManuallyEdited(false);
+        }
+    }, [isOpen]);
+
+    const handleNameChange = (value: string) => {
+        if (!slugManuallyEdited) {
+            onFormChange({ ...form, name: value, slug: slugify(value) });
+        } else {
+            onFormChange({ ...form, name: value });
+        }
+    };
+
+    const handleSlugChange = (value: string) => {
+        setSlugManuallyEdited(true);
+        onFormChange({ ...form, slug: value });
+    };
+
     return (
         <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
             <Button className="hidden" />
@@ -40,20 +65,23 @@ export const InlineFolderModal = ({
                         <div className="w-full rounded-2xl bg-primary p-6 shadow-xl ring-1 ring-secondary_alt">
                             <div className="mb-4">
                                 <p className="text-lg font-semibold text-primary">Create folder</p>
-                                <p className="text-sm text-tertiary">Create a new folder for this page.</p>
                             </div>
 
                             <div className="grid gap-4">
+                                <EmojiPickerField
+                                    value={form.emoji}
+                                    onChange={(emoji) => onFormChange({ ...form, emoji })}
+                                />
                                 <Input
                                     label="Folder name"
                                     value={form.name}
-                                    onChange={(value) => onFormChange({ ...form, name: value })}
+                                    onChange={handleNameChange}
                                     placeholder="e.g. Reporting"
                                 />
                                 <Input
                                     label="Slug"
                                     value={form.slug}
-                                    onChange={(value) => onFormChange({ ...form, slug: value })}
+                                    onChange={handleSlugChange}
                                     placeholder="auto-generated"
                                 />
                                 <Select.ComboBox

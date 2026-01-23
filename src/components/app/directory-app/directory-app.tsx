@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FolderClosed } from "@untitledui/icons";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { supabaseFetch, supabaseUpsert } from "@/utils/supabase/rest";
+import { getIconByName } from "@/utils/icon-map";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
 
 import type { DirectoryAppProps, FormState } from "./types";
@@ -32,6 +34,7 @@ export const DirectoryApp = ({
     variant = "full",
     showDepartments = true,
     departmentsOverride,
+    navigationPages = [],
     onHeaderContentChange,
 }: DirectoryAppProps) => {
     const router = useRouter();
@@ -91,6 +94,7 @@ export const DirectoryApp = ({
                 id: folder.id,
                 label: folder.name,
                 supportingText: `${dept?.name ?? "Unknown"} / ${path}`,
+                emoji: folder.emoji ?? undefined,
             };
         });
 
@@ -100,14 +104,35 @@ export const DirectoryApp = ({
         ];
     }, [allFolders, allFolderPathById, departments]);
 
+    // Map departments to items with icons from navigation pages
+    const departmentItems = useMemo(() => {
+        return departments.map((dept) => {
+            // Find matching navigation page by slugified name
+            const deptSlug = dept.name
+                ?.toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)+/g, "");
+            const navPage = navigationPages.find((page) => page.slug === deptSlug);
+            const Icon = navPage ? getIconByName(navPage.icon, FolderClosed) : FolderClosed;
+
+            return {
+                id: dept.id,
+                label: dept.name ?? dept.id,
+                icon: Icon,
+            };
+        });
+    }, [departments, navigationPages]);
+
     const parentOptions = useMemo(() => {
         return [
-            { label: "Top level", value: "root" },
+            { id: "root", label: "Top level" },
             ...filteredEntries
                 .filter((entry) => !entry.frame_id)
                 .map((entry) => ({
+                    id: entry.id,
                     label: entry.name,
-                    value: entry.id,
+                    emoji: entry.emoji ?? undefined,
                 })),
         ];
     }, [filteredEntries]);
@@ -149,6 +174,7 @@ export const DirectoryApp = ({
                         slug: activeEntry.slug,
                         iframeUrl: activeFrame.iframe_url,
                         description: activeFrame.description ?? "",
+                        emoji: activeEntry.emoji ?? "",
                     });
                     replaceSelectedItems(
                         pageDepartments,
@@ -200,23 +226,33 @@ export const DirectoryApp = ({
                                 ...emptyForm,
                                 name: activeEntry.name,
                                 slug: activeEntry.slug,
+                                emoji: activeEntry.emoji ?? "",
                             });
                             setEditFolderOpen(true);
                         }}
                         onNewFolder={() => {
                             setFolderForm(emptyForm);
+                            setCreateFolderParentId(activeEntry?.id ?? null);
                             setCreateFolderOpen(true);
                         }}
                         onNewPage={() => {
                             setPageForm(emptyForm);
-                            replaceSelectedItems(pageDepartments, []);
                             const parentId = activeEntry?.id ?? null;
                             if (parentId) {
                                 const folder = entriesById.get(parentId);
                                 const label = folder?.name ?? "Current folder";
-                                replaceSelectedItems(pagePlacements, [{ id: parentId, label }]);
+                                const emoji = folder?.emoji ?? undefined;
+                                replaceSelectedItems(pagePlacements, [{ id: parentId, label, emoji }]);
+                                // Pre-fill the department based on the folder's department
+                                const deptItem = departmentItems.find((d) => d.id === folder?.department_id);
+                                if (deptItem) {
+                                    replaceSelectedItems(pageDepartments, [{ id: deptItem.id, label: deptItem.label, icon: deptItem.icon }]);
+                                } else {
+                                    replaceSelectedItems(pageDepartments, []);
+                                }
                             } else {
                                 replaceSelectedItems(pagePlacements, []);
+                                replaceSelectedItems(pageDepartments, []);
                             }
                             setError(null);
                             setCreatePageOpen(true);
@@ -226,7 +262,7 @@ export const DirectoryApp = ({
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, entries, selectedDepartmentId, entriesById, allFoldersById]);
+    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, departmentItems, entries, selectedDepartmentId, entriesById, allFoldersById]);
 
     const handleCreateFolder = async (parentId: string | null) => {
         if (!selectedDepartmentId) return;
@@ -241,6 +277,7 @@ export const DirectoryApp = ({
             frame_id: null,
             name,
             slug,
+            emoji: folderForm.emoji || null,
         });
 
         setFolderForm(emptyForm);
@@ -265,6 +302,7 @@ export const DirectoryApp = ({
             frame_id: null,
             name,
             slug,
+            emoji: inlineFolderForm.emoji || null,
         });
 
         setInlineFolderForm(emptyForm);
@@ -275,6 +313,7 @@ export const DirectoryApp = ({
             pagePlacements.append({
                 id: newFolder.id,
                 label: newFolder.name,
+                emoji: newFolder.emoji ?? undefined,
             });
         }
     };
@@ -349,6 +388,7 @@ export const DirectoryApp = ({
                 frame_id: frame.id,
                 name,
                 slug: uniqueSlug,
+                emoji: pageForm.emoji || null,
             };
         }));
 
@@ -377,7 +417,7 @@ export const DirectoryApp = ({
 
         await supabaseFetch("sh_directory?id=eq." + entry.id, {
             method: "PATCH",
-            body: { name, slug },
+            body: { name, slug, emoji: folderForm.emoji || null },
             prefer: "return=representation",
         });
 
@@ -407,10 +447,10 @@ export const DirectoryApp = ({
             prefer: "return=representation",
         });
 
-        // Update ALL existing directory entries for this frame with new name/slug
+        // Update ALL existing directory entries for this frame with new name/slug/emoji
         await supabaseFetch(`sh_directory?frame_id=eq.${frame.id}`, {
             method: "PATCH",
-            body: { name, slug },
+            body: { name, slug, emoji: pageForm.emoji || null },
             prefer: "return=representation",
         });
 
@@ -475,6 +515,7 @@ export const DirectoryApp = ({
                         frame_id: frame.id,
                         name,
                         slug: uniqueSlug,
+                        emoji: pageForm.emoji || null,
                     };
                 }),
             );
@@ -516,17 +557,25 @@ export const DirectoryApp = ({
 
     const handleNewPageClick = useCallback(() => {
         setPageForm(emptyForm);
-        replaceSelectedItems(pageDepartments, []);
         if (activeParentId) {
             const folder = entriesById.get(activeParentId);
             const label = folder?.name ?? "Current folder";
-            replaceSelectedItems(pagePlacements, [{ id: activeParentId, label }]);
+            const emoji = folder?.emoji ?? undefined;
+            replaceSelectedItems(pagePlacements, [{ id: activeParentId, label, emoji }]);
+            // Pre-fill the department based on the folder's department
+            const deptItem = departmentItems.find((d) => d.id === folder?.department_id);
+            if (deptItem) {
+                replaceSelectedItems(pageDepartments, [{ id: deptItem.id, label: deptItem.label, icon: deptItem.icon }]);
+            } else {
+                replaceSelectedItems(pageDepartments, []);
+            }
         } else {
             replaceSelectedItems(pagePlacements, []);
+            replaceSelectedItems(pageDepartments, []);
         }
         setError(null);
         setCreatePageOpen(true);
-    }, [activeParentId, entriesById, pageDepartments, pagePlacements, replaceSelectedItems, setError]);
+    }, [activeParentId, entriesById, departmentItems, pageDepartments, pagePlacements, replaceSelectedItems, setError]);
 
     const handleEditFolderClick = useCallback(() => {
         if (!activeEntry) return;
@@ -534,6 +583,7 @@ export const DirectoryApp = ({
             ...emptyForm,
             name: activeEntry.name,
             slug: activeEntry.slug,
+            emoji: activeEntry.emoji ?? "",
         });
         setEditFolderOpen(true);
     }, [activeEntry]);
@@ -647,7 +697,7 @@ export const DirectoryApp = ({
                 onOpenChange={setCreatePageOpen}
                 form={pageForm}
                 onFormChange={setPageForm}
-                departments={departments}
+                departmentItems={departmentItems}
                 pageDepartments={pageDepartments}
                 folderOptions={folderOptions}
                 pagePlacements={pagePlacements}
@@ -668,7 +718,7 @@ export const DirectoryApp = ({
                 onOpenChange={setEditPageOpen}
                 form={pageForm}
                 onFormChange={setPageForm}
-                departments={departments}
+                departmentItems={departmentItems}
                 pageDepartments={pageDepartments}
                 folderOptions={folderOptions}
                 pagePlacements={pagePlacements}

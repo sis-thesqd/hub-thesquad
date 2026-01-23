@@ -47,13 +47,13 @@ export const useDirectoryData = ({
     const loadEntries = useCallback(async (departmentId: string) => {
         const filter = `department_id=eq.${encodeURIComponent(departmentId)}`;
         return await supabaseFetch<DirectoryEntry[]>(
-            `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order&${filter}&order=sort_order.asc.nullslast,name.asc`,
+            `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&${filter}&order=sort_order.asc.nullslast,name.asc`,
         );
     }, []);
 
     const loadAllFolders = useCallback(async () => {
         return await supabaseFetch<DirectoryEntry[]>(
-            `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order&frame_id=is.null&order=name.asc`,
+            `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&frame_id=is.null&order=name.asc`,
         );
     }, []);
 

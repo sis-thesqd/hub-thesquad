@@ -17,7 +17,11 @@ export const FolderCard = ({ entry, path, childCount }: FolderCardProps) => {
             className="group flex items-center gap-4 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
         >
             <div className="flex size-12 items-center justify-center rounded-lg bg-secondary">
-                <Folder className="size-6 text-fg-tertiary group-hover:text-brand-secondary" />
+                {entry.emoji ? (
+                    <span className="text-2xl">{entry.emoji}</span>
+                ) : (
+                    <Folder className="size-6 text-fg-tertiary group-hover:text-brand-secondary" />
+                )}
             </div>
             <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-primary">{entry.name}</p>

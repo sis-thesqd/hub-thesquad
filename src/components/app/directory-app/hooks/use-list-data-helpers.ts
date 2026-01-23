@@ -17,7 +17,7 @@ export const useListDataHelpers = () => {
 
     const replaceSelectedItems = useCallback((
         list: ReturnType<typeof useListData<SelectItemType>>,
-        items: { id: string; label?: string }[]
+        items: SelectItemType[]
     ) => {
         clearSelectedItems(list);
         items.forEach((item) => list.append(item));

@@ -1,12 +1,15 @@
+import { useState, useEffect } from "react";
+import type { FC } from "react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { MultiSelect } from "@/components/base/select/multi-select";
 import { Dialog, DialogTrigger, Modal, ModalOverlay } from "@/components/application/modals/modal";
 import type { SelectItemType } from "@/components/base/select/select";
-import type { RipplingDepartment } from "@/utils/supabase/types";
 import type { FormState } from "../../types";
 import { useListData } from "react-stately";
+import { EmojiPickerField } from "../emoji-picker-field";
+import { slugify } from "../../utils";
 
 type FolderOption = {
     id: string;
@@ -14,12 +17,18 @@ type FolderOption = {
     supportingText?: string;
 };
 
+type DepartmentItem = {
+    id: string;
+    label: string;
+    icon: FC<{ className?: string }>;
+};
+
 type CreatePageModalProps = {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     form: FormState;
     onFormChange: (form: FormState) => void;
-    departments: RipplingDepartment[];
+    departmentItems: DepartmentItem[];
     pageDepartments: ReturnType<typeof useListData<SelectItemType>>;
     folderOptions: FolderOption[];
     pagePlacements: ReturnType<typeof useListData<SelectItemType>>;
@@ -32,13 +41,35 @@ export const CreatePageModal = ({
     onOpenChange,
     form,
     onFormChange,
-    departments,
+    departmentItems,
     pageDepartments,
     folderOptions,
     pagePlacements,
     onFolderSelected,
     onSubmit,
 }: CreatePageModalProps) => {
+    const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+
+    // Reset manual edit flag when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setSlugManuallyEdited(false);
+        }
+    }, [isOpen]);
+
+    const handleNameChange = (value: string) => {
+        if (!slugManuallyEdited) {
+            onFormChange({ ...form, name: value, slug: slugify(value) });
+        } else {
+            onFormChange({ ...form, name: value });
+        }
+    };
+
+    const handleSlugChange = (value: string) => {
+        setSlugManuallyEdited(true);
+        onFormChange({ ...form, slug: value });
+    };
+
     return (
         <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
             <Button className="hidden" />
@@ -51,16 +82,20 @@ export const CreatePageModal = ({
                                 <p className="text-sm text-tertiary">Embed an app or form URL.</p>
                             </div>
                             <div className="grid gap-4">
+                                <EmojiPickerField
+                                    value={form.emoji}
+                                    onChange={(emoji) => onFormChange({ ...form, emoji })}
+                                />
                                 <Input
                                     label="Page name"
                                     value={form.name}
-                                    onChange={(value) => onFormChange({ ...form, name: value })}
+                                    onChange={handleNameChange}
                                     placeholder="e.g. Intake form"
                                 />
                                 <Input
                                     label="Slug"
                                     value={form.slug}
-                                    onChange={(value) => onFormChange({ ...form, slug: value })}
+                                    onChange={handleSlugChange}
                                     placeholder="auto-generated"
                                 />
                                 <Input
@@ -77,10 +112,7 @@ export const CreatePageModal = ({
                                 />
                                 <MultiSelect
                                     label="Visible to departments"
-                                    items={departments.map((department) => ({
-                                        id: department.id,
-                                        label: department.name ?? department.id,
-                                    }))}
+                                    items={departmentItems}
                                     selectedItems={pageDepartments}
                                     placeholder="Search departments"
                                 >

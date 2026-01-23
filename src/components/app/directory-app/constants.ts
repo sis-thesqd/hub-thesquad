@@ -5,4 +5,5 @@ export const emptyForm: FormState = {
     slug: "",
     iframeUrl: "",
     description: "",
+    emoji: "",
 };

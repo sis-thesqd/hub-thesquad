@@ -76,7 +76,7 @@ export const NavItemButton = ({
                 // Load ALL entries for this department (not just top-level)
                 const filter = `department_id=eq.${encodeURIComponent(departmentId)}`;
                 const entriesData = await supabaseFetch<DirectoryEntry[]>(
-                    `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order&${filter}&order=sort_order.asc.nullslast,name.asc`,
+                    `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&${filter}&order=sort_order.asc.nullslast,name.asc`,
                 );
                 
                 // Load frames for reference
@@ -242,10 +242,14 @@ export const NavItemButton = ({
                                         className="block px-1.5 py-px outline-hidden"
                                     >
                                         <div className="flex items-center rounded-md px-2.5 py-2 transition duration-100 ease-linear hover:bg-primary_hover">
-                                            <FileCode01
-                                                aria-hidden="true"
-                                                className="mr-2 size-4 shrink-0 stroke-[2.25px] text-fg-quaternary"
-                                            />
+                                            {page.emoji ? (
+                                                <span className="mr-2 text-base">{page.emoji}</span>
+                                            ) : (
+                                                <FileCode01
+                                                    aria-hidden="true"
+                                                    className="mr-2 size-4 shrink-0 stroke-[2.25px] text-fg-quaternary"
+                                                />
+                                            )}
                                             <span className="grow truncate text-sm font-semibold text-secondary">
                                                 {page.name}
                                             </span>
@@ -261,7 +265,7 @@ export const NavItemButton = ({
                     {topLevelFolders.map((folder) => {
                         const folderHref = `/${folder.department_id}/${folder.slug}`;
                         const folderPages = pagesByParent.get(folder.id) || [];
-                        
+
                         return (
                             <div key={folder.id}>
                                 <Link
@@ -269,16 +273,20 @@ export const NavItemButton = ({
                                     className="block px-1.5 py-px outline-hidden"
                                 >
                                     <div className="flex items-center rounded-md px-2.5 py-2 transition duration-100 ease-linear hover:bg-primary_hover">
-                                        <Folder
-                                            aria-hidden="true"
-                                            className="mr-2 size-4 shrink-0 stroke-[2.25px] text-fg-quaternary"
-                                        />
+                                        {folder.emoji ? (
+                                            <span className="mr-2 text-base">{folder.emoji}</span>
+                                        ) : (
+                                            <Folder
+                                                aria-hidden="true"
+                                                className="mr-2 size-4 shrink-0 stroke-[2.25px] text-fg-quaternary"
+                                            />
+                                        )}
                                         <span className="grow truncate text-sm font-semibold text-secondary">
                                             {folder.name}
                                         </span>
                                     </div>
                                 </Link>
-                                
+
                                 {/* Child pages nested under the folder */}
                                 {folderPages.length > 0 && (
                                     <div className="ml-6 pl-1">
@@ -291,10 +299,14 @@ export const NavItemButton = ({
                                                     className="block px-1.5 py-px outline-hidden"
                                                 >
                                                     <div className="flex items-center rounded-md px-2.5 py-2 transition duration-100 ease-linear hover:bg-primary_hover">
-                                                        <FileCode01
-                                                            aria-hidden="true"
-                                                            className="mr-2 size-4 shrink-0 stroke-[2.25px] text-fg-quaternary"
-                                                        />
+                                                        {page.emoji ? (
+                                                            <span className="mr-2 text-base">{page.emoji}</span>
+                                                        ) : (
+                                                            <FileCode01
+                                                                aria-hidden="true"
+                                                                className="mr-2 size-4 shrink-0 stroke-[2.25px] text-fg-quaternary"
+                                                            />
+                                                        )}
                                                         <span className="grow truncate text-sm font-semibold text-secondary">
                                                             {page.name}
                                                         </span>
