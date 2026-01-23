@@ -17,8 +17,14 @@ export const IframeView = ({ frame }: IframeViewProps) => {
     const iframeSrc = useMemo(() => {
         if (!frame.iframe_url) return "";
 
+        // Ensure URL has a protocol
+        let urlString = frame.iframe_url;
+        if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
+            urlString = `https://${urlString}`;
+        }
+
         try {
-            const url = new URL(frame.iframe_url);
+            const url = new URL(urlString);
 
             // Merge parent URL params into iframe URL
             // Parent params take precedence over existing iframe params
@@ -29,7 +35,7 @@ export const IframeView = ({ frame }: IframeViewProps) => {
             return url.toString();
         } catch {
             // If iframe_url is not a valid URL, return it as-is
-            return frame.iframe_url;
+            return urlString;
         }
     }, [frame.iframe_url, urlParams]);
 

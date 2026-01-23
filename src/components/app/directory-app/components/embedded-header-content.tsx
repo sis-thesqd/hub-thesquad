@@ -28,14 +28,20 @@ export const EmbeddedHeaderContent = ({
     const iframeUrlWithParams = useMemo(() => {
         if (!activeFrame.iframe_url) return "";
 
+        // Ensure URL has a protocol
+        let urlString = activeFrame.iframe_url;
+        if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
+            urlString = `https://${urlString}`;
+        }
+
         try {
-            const url = new URL(activeFrame.iframe_url);
+            const url = new URL(urlString);
             urlParams.forEach((value, key) => {
                 url.searchParams.set(key, value);
             });
             return url.toString();
         } catch {
-            return activeFrame.iframe_url;
+            return urlString;
         }
     }, [activeFrame.iframe_url, urlParams]);
 

@@ -687,7 +687,7 @@ export const DirectoryApp = ({
                 )}
 
                 {/* Content */}
-                <section className={`flex min-h-0 flex-1 flex-col overflow-hidden ${activeFrame ? "" : "pb-8"}`}>
+                <section className={`flex min-h-0 flex-1 flex-col overflow-hidden ${activeFrame ? "" : "px-4 pb-8 lg:px-8"}`}>
                     {error && (
                         <div className="mb-4 rounded-lg border border-error_subtle bg-error_primary/10 px-4 py-3 text-sm text-error_primary">
                             {error}
