@@ -29,7 +29,7 @@ export const NavAccountMenu = ({
     const focusManager = useFocusManager();
     const dialogRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
-    const { signOut, worker } = useAuth();
+    const { signOut, worker, userEmail } = useAuth();
     const { theme, setTheme } = useTheme();
 
     const fullName = [worker?.given_name, worker?.family_name].filter(Boolean).join(" ") || "User";
@@ -101,6 +101,7 @@ export const NavAccountMenu = ({
             <div className="flex flex-col gap-0.5 pt-1 pb-1.5">
                 <div className="px-3 py-2">
                     <p className="text-sm font-semibold text-primary">{fullName}</p>
+                    {userEmail && <p className="text-xs text-tertiary">{userEmail}</p>}
                 </div>
                 <NavAccountCardMenuItem label="Sign out" icon={LogOut01} shortcut="⌥⇧Q" onClick={handleSignOut} />
             </div>
