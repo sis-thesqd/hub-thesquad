@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import type { FC } from "react";
+import type { FC, HTMLAttributes } from "react";
 import { X } from "@untitledui/icons";
+
+const SlashIcon: FC<HTMLAttributes<HTMLSpanElement>> = ({ className }) => (
+    <span className={`${className} text-lg`}>/</span>
+);
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
@@ -108,11 +112,6 @@ export const CreatePageModal = ({
                             </div>
                             <div className="grid gap-4">
                                 <div className="flex items-end gap-3">
-                                    <EmojiPickerField
-                                        value={form.emoji}
-                                        onChange={(emoji) => onFormChange({ ...form, emoji })}
-                                        isRequired
-                                    />
                                     <div className="flex-1">
                                         <Input
                                             label="Page name"
@@ -122,12 +121,19 @@ export const CreatePageModal = ({
                                             isRequired
                                         />
                                     </div>
+                                    <EmojiPickerField
+                                        value={form.emoji}
+                                        onChange={(emoji) => onFormChange({ ...form, emoji })}
+                                        isRequired
+                                    />
                                 </div>
                                 <Input
                                     label="Slug"
                                     value={form.slug}
                                     onChange={handleSlugChange}
                                     placeholder="auto-generated"
+                                    icon={SlashIcon}
+                                    inputClassName="pl-8"
                                     isRequired
                                 />
                                 <Input
