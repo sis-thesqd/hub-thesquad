@@ -31,15 +31,11 @@ export const LoginForm = () => {
         setError(null);
 
         try {
-            // First check if user exists in rippling_workers
-            const { data: worker, error: workerError } = await supabase
-                .from("rippling_workers")
-                .select("id, status")
-                .or(`work_email.eq.${email},personal_email.eq.${email}`)
-                .eq("status", "ACTIVE")
-                .single();
+            // First check if user exists in rippling_workers via API
+            const workerResponse = await fetch(`/api/auth/worker?email=${encodeURIComponent(email)}`);
+            const workerData = await workerResponse.json();
 
-            if (workerError || !worker) {
+            if (!workerResponse.ok || !workerData.worker) {
                 setError(
                     "You are not authorized to access this application. Please use your work or personal email registered in the system."
                 );

@@ -61,18 +61,12 @@ export const VerifyForm = () => {
                 return;
             }
 
-            // Check if user is authorized in rippling_workers
+            // Check if user is authorized in rippling_workers via API
             if (data.user?.email) {
-                const { data: worker, error: workerError } = await supabase
-                    .from("rippling_workers")
-                    .select("id, status")
-                    .or(
-                        `work_email.eq.${data.user.email},personal_email.eq.${data.user.email}`
-                    )
-                    .eq("status", "ACTIVE")
-                    .single();
+                const workerResponse = await fetch(`/api/auth/worker?email=${encodeURIComponent(data.user.email)}`);
+                const workerData = await workerResponse.json();
 
-                if (workerError || !worker) {
+                if (!workerResponse.ok || !workerData.worker) {
                     await supabase.auth.signOut();
                     setError(
                         "You are not authorized to access this application."

@@ -5,6 +5,7 @@ import {
     useContext,
     useEffect,
     useState,
+    useRef,
     type ReactNode,
 } from "react";
 import type { User, Session } from "@supabase/supabase-js";
@@ -92,21 +93,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [error, setError] = useState<string | null>(null);
 
     const supabase = createClient();
+    const fetchingRef = useRef(false);
 
     const fetchWorker = async (email: string): Promise<RipplingWorker | null> => {
-        const { data, error } = await supabase
-            .from("rippling_workers")
-            .select("*")
-            .or(`work_email.eq.${email},personal_email.eq.${email}`)
-            .eq("status", "ACTIVE")
-            .single();
+        // Prevent duplicate fetches
+        if (fetchingRef.current) return null;
+        fetchingRef.current = true;
 
-        if (error) {
+        try {
+            const response = await fetch(`/api/auth/worker?email=${encodeURIComponent(email)}`);
+            if (!response.ok) {
+                console.error("Error fetching worker:", response.statusText);
+                return null;
+            }
+            const data = await response.json();
+            return data.worker;
+        } catch (error) {
             console.error("Error fetching worker:", error);
             return null;
+        } finally {
+            fetchingRef.current = false;
         }
-
-        return data;
     };
 
     const refreshWorker = async () => {
