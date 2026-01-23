@@ -3,7 +3,7 @@ import type { FC, HTMLAttributes } from "react";
 import { Trash01, X } from "@untitledui/icons";
 
 const SlashIcon: FC<HTMLAttributes<HTMLSpanElement>> = ({ className }) => (
-    <span className={`${className} text-lg`}>/</span>
+    <span className={`${className} text-lg -translate-y-1`}>/</span>
 );
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
