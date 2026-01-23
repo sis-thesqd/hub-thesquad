@@ -3,17 +3,35 @@
 import Link from "next/link";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { Badge } from "@/components/base/badges/badges";
-import type { NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
+import type { DirectoryEntry, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 
 interface HomeGridProps {
     departments: RipplingDepartment[];
     navigationPages: NavigationPage[];
+    entries: DirectoryEntry[];
     userDepartmentId: string | null;
 }
 
-export const HomeGrid = ({ departments, navigationPages, userDepartmentId }: HomeGridProps) => {
+export const HomeGrid = ({ departments, navigationPages, entries, userDepartmentId }: HomeGridProps) => {
     const appendUrlParams = useAppendUrlParams();
+
+    // Calculate folder and page counts per department
+    const countsByDepartment = entries.reduce(
+        (acc, entry) => {
+            const deptId = entry.department_id;
+            if (!acc[deptId]) {
+                acc[deptId] = { folders: 0, pages: 0 };
+            }
+            if (entry.frame_id) {
+                acc[deptId].pages += 1;
+            } else {
+                acc[deptId].folders += 1;
+            }
+            return acc;
+        },
+        {} as Record<string, { folders: number; pages: number }>
+    );
 
     // Map navigation pages to departments
     const items = navigationPages.map((page) => {
@@ -27,10 +45,14 @@ export const HomeGrid = ({ departments, navigationPages, userDepartmentId }: Hom
             return deptSlug === page.slug;
         });
 
+        const counts = department ? countsByDepartment[department.id] : null;
+
         return {
             ...page,
             departmentId: department?.id,
             href: department ? `/${department.id}` : "#",
+            folderCount: counts?.folders ?? 0,
+            pageCount: counts?.pages ?? 0,
         };
     });
 
@@ -58,6 +80,9 @@ export const HomeGrid = ({ departments, navigationPages, userDepartmentId }: Hom
                                     </Badge>
                                 )}
                             </div>
+                            <p className="mt-0.5 text-sm text-tertiary">
+                                {item.folderCount} {item.folderCount === 1 ? "folder" : "folders"} · {item.pageCount} {item.pageCount === 1 ? "page" : "pages"}
+                            </p>
                         </div>
                     </Link>
                 );

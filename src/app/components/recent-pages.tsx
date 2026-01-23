@@ -111,9 +111,9 @@ export const RecentPages = ({ entries, frames, userDepartmentId }: RecentPagesPr
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="truncate font-medium text-primary">{page.name}</p>
-                                {page.description && (
-                                    <p className="mt-0.5 line-clamp-2 text-sm text-tertiary">
-                                        {page.description}
+                                {page.createdAt && (
+                                    <p className="mt-0.5 text-sm text-tertiary">
+                                        Added {new Date(page.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                     </p>
                                 )}
                             </div>

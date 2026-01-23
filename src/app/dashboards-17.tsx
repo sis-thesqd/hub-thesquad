@@ -398,7 +398,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                     <div className="min-h-0 flex-1 overflow-auto px-4 lg:px-8">
                         {isHomePage ? (
                             <>
-                                <HomeGrid departments={departments} navigationPages={navigationPages} userDepartmentId={worker?.department_id ?? null} />
+                                <HomeGrid departments={departments} navigationPages={navigationPages} entries={entries} userDepartmentId={worker?.department_id ?? null} />
                                 <RecentPages
                                     entries={entries}
                                     frames={frames}
