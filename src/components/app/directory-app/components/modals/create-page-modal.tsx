@@ -97,7 +97,6 @@ export const CreatePageModal = ({
                         <div className="w-full rounded-2xl bg-primary p-6 shadow-xl ring-1 ring-secondary_alt">
                             <div className="mb-4">
                                 <p className="text-lg font-semibold text-primary">Create page</p>
-                                <p className="text-sm text-tertiary">Embed an app or form URL.</p>
                             </div>
                             <div className="grid gap-4">
                                 <EmojiPickerField

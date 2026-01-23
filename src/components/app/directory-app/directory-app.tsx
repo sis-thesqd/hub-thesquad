@@ -11,7 +11,7 @@ import { getIconByName } from "@/utils/icon-map";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
 
 import type { DirectoryAppProps, FormState } from "./types";
-import { emptyForm } from "./constants";
+import { emptyForm, getRandomEmoji } from "./constants";
 import { slugify, buildPathSegments } from "./utils";
 import { useDirectoryData, useListDataHelpers } from "./hooks";
 import {
@@ -101,11 +101,11 @@ export const DirectoryApp = ({
         if (!initialModalAction || !selectedDepartmentId) return;
 
         if (initialModalAction === "folder") {
-            setFolderForm(emptyForm);
+            setFolderForm({ ...emptyForm, emoji: getRandomEmoji() });
             setCreateFolderParentId(null);
             setCreateFolderOpen(true);
         } else if (initialModalAction === "page") {
-            setPageForm(emptyForm);
+            setPageForm({ ...emptyForm, emoji: getRandomEmoji() });
             clearSelectedItems(pagePlacements);
             clearSelectedItems(pageDepartments);
             setCreatePageOpen(true);
