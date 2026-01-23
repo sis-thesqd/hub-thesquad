@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DirectoryEntry, Frame, RipplingDepartment } from "@/utils/supabase/types";
-import { supabaseFetch } from "@/utils/supabase/rest";
 import { buildPathSegments, findEntryByPath } from "../utils";
 
 type UseDirectoryDataProps = {
@@ -20,15 +19,28 @@ export const useDirectoryData = ({
     framesOverride,
 }: UseDirectoryDataProps) => {
     const router = useRouter();
-    const [departments, setDepartments] = useState<RipplingDepartment[]>(departmentsOverride ?? []);
-    const [entries, setEntries] = useState<DirectoryEntry[]>([]);
-    const [allFolders, setAllFolders] = useState<DirectoryEntry[]>([]);
-    const [frames, setFrames] = useState<Frame[]>(framesOverride ?? []);
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
     const [pathSegments, setPathSegments] = useState(initialPath);
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [hasInitialData, setHasInitialData] = useState(!!(entriesOverride?.length && framesOverride?.length));
+
+    // Use overrides directly - no local state duplication needed
+    const departments = departmentsOverride ?? [];
+    const frames = framesOverride ?? [];
+
+    // Filter entries for the selected department
+    const entries = useMemo(() => {
+        if (!entriesOverride?.length || !selectedDepartmentId) return [];
+        return entriesOverride.filter((e) => e.department_id === selectedDepartmentId);
+    }, [entriesOverride, selectedDepartmentId]);
+
+    // All folders from the override
+    const allFolders = useMemo(() => {
+        if (!entriesOverride?.length) return [];
+        return entriesOverride.filter((e) => !e.frame_id);
+    }, [entriesOverride]);
+
+    // Determine loading state based on whether overrides have loaded
+    const isLoading = !departmentsOverride?.length || !entriesOverride?.length || !framesOverride?.length;
 
     useEffect(() => {
         setSelectedDepartmentId(initialDepartmentId ?? "");
@@ -40,124 +52,20 @@ export const useDirectoryData = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialPathKey]);
 
-    const loadDepartments = useCallback(async () => {
-        const data = await supabaseFetch<RipplingDepartment[]>("rippling_departments?select=id,name&order=name.asc");
-        return data;
-    }, []);
-
-    const loadFrames = useCallback(async () => {
-        return await supabaseFetch<Frame[]>("sh_frames?select=id,name,iframe_url,description,department_ids,created_at&order=name.asc");
-    }, []);
-
-    const loadEntries = useCallback(async (departmentId: string) => {
-        const filter = `department_id=eq.${encodeURIComponent(departmentId)}`;
-        return await supabaseFetch<DirectoryEntry[]>(
-            `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&${filter}&order=sort_order.asc.nullslast,name.asc`,
-        );
-    }, []);
-
-    const loadAllFolders = useCallback(async () => {
-        return await supabaseFetch<DirectoryEntry[]>(
-            `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&frame_id=is.null&order=name.asc`,
-        );
-    }, []);
-
-    const refreshData = useCallback(
-        async (departmentId: string) => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const [entriesData, framesData, allFoldersData] = await Promise.all([
-                    loadEntries(departmentId),
-                    loadFrames(),
-                    loadAllFolders(),
-                ]);
-                setEntries(entriesData);
-                setFrames(framesData);
-                setAllFolders(allFoldersData);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to load data");
-            } finally {
-                setIsLoading(false);
-            }
-        },
-        [loadEntries, loadFrames, loadAllFolders],
-    );
-
+    // Handle initial redirect if no department selected
     useEffect(() => {
-        if (!departmentsOverride?.length) return;
-        setDepartments(departmentsOverride);
-    }, [departmentsOverride]);
-
-    // Initialize from overrides if provided
-    useEffect(() => {
-        if (entriesOverride?.length && selectedDepartmentId) {
-            // Filter entries for the selected department
-            const deptEntries = entriesOverride.filter((e) => e.department_id === selectedDepartmentId);
-            setEntries(deptEntries);
-            // All folders from the override
-            const folders = entriesOverride.filter((e) => !e.frame_id);
-            setAllFolders(folders);
+        if (departmentsOverride?.length && !initialDepartmentId) {
+            const first = departmentsOverride[0].id;
+            setSelectedDepartmentId(first);
+            router.replace(`/${first}`);
         }
-    }, [entriesOverride, selectedDepartmentId]);
+    }, [departmentsOverride, initialDepartmentId, router]);
 
-    useEffect(() => {
-        if (framesOverride?.length) {
-            setFrames(framesOverride);
-        }
-    }, [framesOverride]);
-
-    useEffect(() => {
-        let isMounted = true;
-
-        const init = async () => {
-            if (departmentsOverride?.length) {
-                if (!initialDepartmentId) {
-                    const first = departmentsOverride[0].id;
-                    setSelectedDepartmentId(first);
-                    router.replace(`/${first}`);
-                }
-                return;
-            }
-
-            setIsLoading(true);
-            setError(null);
-            try {
-                const deptData = await loadDepartments();
-                if (!isMounted) return;
-                setDepartments(deptData);
-
-                if (!initialDepartmentId && deptData.length > 0) {
-                    const first = deptData[0].id;
-                    setSelectedDepartmentId(first);
-                    router.replace(`/${first}`);
-                }
-            } catch (err) {
-                if (!isMounted) return;
-                setError(err instanceof Error ? err.message : "Failed to load departments");
-            } finally {
-                if (isMounted) setIsLoading(false);
-            }
-        };
-
-        void init();
-
-        return () => {
-            isMounted = false;
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [departmentsOverride, loadDepartments, router, initialDepartmentId]);
-
-    useEffect(() => {
-        if (!selectedDepartmentId) return;
-        // Skip initial fetch if we have override data
-        if (hasInitialData) {
-            setHasInitialData(false);
-            return;
-        }
-        void refreshData(selectedDepartmentId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDepartmentId]);
+    // No-op refreshData - data comes from React Query via overrides
+    // Parent components should use invalidateEntriesAndFrames() instead
+    const refreshData = useCallback(async (_departmentId: string) => {
+        // Data refresh is handled by React Query invalidation in parent
+    }, []);
 
     const frameById = useMemo(() => new Map(frames.map((frame) => [frame.id, frame])), [frames]);
 

@@ -19,6 +19,8 @@ interface FavoritesViewProps {
     navigationPages: NavigationPage[];
     onToggleFavorite: (entryId?: string, departmentId?: string) => void;
     isLoading?: boolean;
+    /** True once favorites data has been fetched at least once */
+    hasLoaded?: boolean;
 }
 
 // Build path segments from entry to root
@@ -50,6 +52,7 @@ export const FavoritesView = ({
     navigationPages,
     onToggleFavorite,
     isLoading = false,
+    hasLoaded = false,
 }: FavoritesViewProps) => {
     const appendUrlParams = useAppendUrlParams();
 
@@ -112,8 +115,9 @@ export const FavoritesView = ({
         favoriteFolders.length === 0 &&
         favoritePages.length === 0;
 
-    // Show loading state while favorites are being fetched
-    if (isLoading) {
+    // Only show loading if data hasn't loaded yet (not cached, not fetched)
+    // If hasLoaded is true (from prefetch cache), skip loader entirely
+    if (!hasLoaded) {
         return (
             <div className="flex h-full min-h-[400px] items-center justify-center">
                 <LoadingIndicator type="line-simple" size="md" />
@@ -121,6 +125,7 @@ export const FavoritesView = ({
         );
     }
 
+    // Show empty state only after confirming data has loaded
     if (hasNoFavorites) {
         return (
             <div className="flex h-full min-h-[400px] items-center justify-center">

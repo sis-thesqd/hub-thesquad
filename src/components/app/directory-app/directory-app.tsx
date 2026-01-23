@@ -6,9 +6,20 @@ import { FolderClosed } from "@untitledui/icons";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { useAuth } from "@/providers/auth-provider";
-import { supabaseFetch, supabaseUpsert } from "@/utils/supabase/rest";
+import { useInvalidateDirectory } from "@/hooks/use-directory-queries";
 import { getIconByName } from "@/utils/icon-map";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
+import {
+    createFolder as createFolderAction,
+    updateFolder as updateFolderAction,
+    createFrame,
+    updateFrame,
+    createDirectoryEntries,
+    updateDirectoryEntriesByFrameId,
+    deleteDirectoryEntries,
+    getPagePlacements,
+    getExistingSlugs,
+} from "@/app/api/directory/actions";
 
 import type { DirectoryAppProps, FormState } from "./types";
 import { emptyForm, getRandomEmoji } from "./constants";
@@ -85,6 +96,8 @@ export const DirectoryApp = ({
         clearSelectedItems,
         replaceSelectedItems,
     } = useListDataHelpers();
+
+    const { invalidateEntriesAndFrames } = useInvalidateDirectory();
 
     // Use passed favorites props, with fallback for standalone usage
     const toggleFavorite = onToggleFavorite ?? (() => {});
@@ -239,11 +252,9 @@ export const DirectoryApp = ({
                         }),
                     );
                     // Query ALL placements for this frame (across all departments)
-                    const allPlacements = await supabaseFetch<{ parent_id: string | null }[]>(
-                        `sh_directory?frame_id=eq.${activeFrame.id}&select=parent_id`
-                    );
-                    const placements = allPlacements
-                        .filter((entry): entry is { parent_id: string } => entry.parent_id !== null)
+                    const placementsResult = await getPagePlacements(activeFrame.id);
+                    const placements = (placementsResult.data ?? [])
+                        .filter((entry): entry is { id: string; parent_id: string } => entry.parent_id !== null)
                         .map((entry) => entry.parent_id);
                     replaceSelectedItems(
                         pagePlacements,
@@ -334,22 +345,23 @@ export const DirectoryApp = ({
 
         const slug = folderForm.slug.trim() || slugify(name);
 
-        await supabaseUpsert("sh_directory", {
+        const result = await createFolderAction({
             department_id: selectedDepartmentId,
             parent_id: parentId,
-            frame_id: null,
             name,
             slug,
             emoji: folderForm.emoji || null,
-            type: "folder",
-            created_by: worker?.id ?? null,
-            updated_by: worker?.id ?? null,
         });
+
+        if (!result.success) {
+            setError(result.error ?? "Failed to create folder");
+            return;
+        }
 
         setFolderForm(emptyForm);
         setCreateFolderParentId(null);
         setCreateFolderOpen(false);
-        await refreshData(selectedDepartmentId);
+        invalidateEntriesAndFrames();
     };
 
     const handleInlineFolderCreate = async () => {
@@ -362,27 +374,28 @@ export const DirectoryApp = ({
 
         const slug = inlineFolderForm.slug.trim() || slugify(name);
 
-        const [newFolder] = await supabaseUpsert<DirectoryEntry[]>("sh_directory", {
+        const result = await createFolderAction({
             department_id: departmentId,
             parent_id: resolvedParentId,
-            frame_id: null,
             name,
             slug,
             emoji: inlineFolderForm.emoji || null,
-            type: "folder",
-            created_by: worker?.id ?? null,
-            updated_by: worker?.id ?? null,
         });
+
+        if (!result.success) {
+            setError(result.error ?? "Failed to create folder");
+            return;
+        }
 
         setInlineFolderForm(emptyForm);
         setInlineFolderOpen(false);
-        await refreshData(selectedDepartmentId);
+        invalidateEntriesAndFrames();
 
-        if (newFolder) {
+        if (result.data) {
             pagePlacements.append({
-                id: newFolder.id,
-                label: newFolder.name,
-                emoji: newFolder.emoji ?? undefined,
+                id: result.data.id,
+                label: result.data.name,
+                emoji: result.data.emoji ?? undefined,
             });
         }
     };
@@ -406,27 +419,32 @@ export const DirectoryApp = ({
             ? selectedDeptIds
             : [selectedDepartmentId, ...selectedDeptIds];
 
-        const [frame] = await supabaseUpsert<Frame[]>("sh_frames", {
+        // Create frame via server action
+        const frameResult = await createFrame({
             name,
             iframe_url: iframeUrl,
             description: pageForm.description.trim() || null,
             department_ids: departmentIds,
-            created_by: worker?.id ?? null,
-            updated_by: worker?.id ?? null,
         });
 
+        if (!frameResult.success || !frameResult.data) {
+            setError(frameResult.error ?? "Failed to create page");
+            return;
+        }
+
+        const frame = frameResult.data;
+
         // Check for slug conflicts in target folders
-        const targetFolderIds = placementIds.join(",");
-        const existingSlugs = await supabaseFetch<{ parent_id: string; slug: string }[]>(
-            `sh_directory?parent_id=in.(${targetFolderIds})&select=parent_id,slug`
-        );
+        const slugsResult = await getExistingSlugs(placementIds);
         const slugsByParent = new Map<string, Set<string>>();
-        existingSlugs.forEach((entry) => {
-            if (!slugsByParent.has(entry.parent_id)) {
-                slugsByParent.set(entry.parent_id, new Set());
-            }
-            slugsByParent.get(entry.parent_id)?.add(entry.slug);
-        });
+        if (slugsResult.success && slugsResult.data) {
+            slugsResult.data.forEach((entry) => {
+                if (!slugsByParent.has(entry.parent_id)) {
+                    slugsByParent.set(entry.parent_id, new Set());
+                }
+                slugsByParent.get(entry.parent_id)?.add(entry.slug);
+            });
+        }
 
         // Generate unique slugs for each placement
         const getUniqueSlug = (parentId: string, baseSlug: string): string => {
@@ -442,7 +460,7 @@ export const DirectoryApp = ({
         // Track slugs used for first placement (for navigation)
         let firstPlacementSlug = slug;
 
-        await supabaseUpsert("sh_directory", placementIds.map((placementId, index) => {
+        const directoryEntries = placementIds.map((placementId, index) => {
             const folder = allFoldersById.get(placementId);
             const deptId = folder?.department_id ?? selectedDepartmentId;
             const uniqueSlug = getUniqueSlug(placementId, slug);
@@ -461,17 +479,17 @@ export const DirectoryApp = ({
                 slug: uniqueSlug,
                 emoji: pageForm.emoji || null,
                 type: "frame" as const,
-                created_by: worker?.id ?? null,
-                updated_by: worker?.id ?? null,
             };
-        }));
+        });
+
+        await createDirectoryEntries(directoryEntries);
 
         setPageForm(emptyForm);
         setCreatePageOpen(false);
         clearSelectedItems(pageDepartments);
         clearSelectedItems(pagePlacements);
 
-        await refreshData(selectedDepartmentId);
+        invalidateEntriesAndFrames();
 
         const firstPlacement = placementIds[0];
         const parentFolder = allFoldersById.get(firstPlacement);
@@ -489,15 +507,20 @@ export const DirectoryApp = ({
 
         const slug = folderForm.slug.trim() || slugify(name);
 
-        await supabaseFetch("sh_directory?id=eq." + entry.id, {
-            method: "PATCH",
-            body: { name, slug, emoji: folderForm.emoji || null, updated_by: worker?.id ?? null },
-            prefer: "return=representation",
+        const result = await updateFolderAction(entry.id, {
+            name,
+            slug,
+            emoji: folderForm.emoji || null,
         });
+
+        if (!result.success) {
+            setError(result.error ?? "Failed to update folder");
+            return;
+        }
 
         setFolderForm(emptyForm);
         setEditFolderOpen(false);
-        await refreshData(selectedDepartmentId);
+        invalidateEntriesAndFrames();
     };
 
     const handleUpdatePage = async (frame: Frame, placementIds: string[]) => {
@@ -510,29 +533,23 @@ export const DirectoryApp = ({
         const slug = pageForm.slug.trim() || slugify(name);
 
         // Update frame with new data
-        await supabaseFetch(`sh_frames?id=eq.${frame.id}`, {
-            method: "PATCH",
-            body: {
-                name,
-                iframe_url: iframeUrl,
-                description: pageForm.description.trim() || null,
-                department_ids: pageDepartments.items.map((item) => item.id),
-                updated_by: worker?.id ?? null,
-            },
-            prefer: "return=representation",
+        await updateFrame(frame.id, {
+            name,
+            iframe_url: iframeUrl,
+            description: pageForm.description.trim() || null,
+            department_ids: pageDepartments.items.map((item) => item.id),
         });
 
         // Update ALL existing directory entries for this frame with new name/slug/emoji
-        await supabaseFetch(`sh_directory?frame_id=eq.${frame.id}`, {
-            method: "PATCH",
-            body: { name, slug, emoji: pageForm.emoji || null, updated_by: worker?.id ?? null },
-            prefer: "return=representation",
+        await updateDirectoryEntriesByFrameId(frame.id, {
+            name,
+            slug,
+            emoji: pageForm.emoji || null,
         });
 
         // Query ALL existing placements for this frame (across all departments)
-        const allExistingPlacements = await supabaseFetch<{ id: string; parent_id: string | null }[]>(
-            `sh_directory?frame_id=eq.${frame.id}&select=id,parent_id`
-        );
+        const placementsResult = await getPagePlacements(frame.id);
+        const allExistingPlacements = placementsResult.data ?? [];
 
         const existingPlacements = allExistingPlacements
             .filter((placement): placement is { id: string; parent_id: string } => placement.parent_id !== null);
@@ -544,23 +561,22 @@ export const DirectoryApp = ({
         const toAdd = Array.from(selectedSet).filter((id) => !existingSet.has(id));
 
         if (toRemove.length) {
-            const ids = toRemove.map((placement) => placement.id).join(",");
-            await supabaseFetch(`sh_directory?id=in.(${ids})`, { method: "DELETE" });
+            const ids = toRemove.map((placement) => placement.id);
+            await deleteDirectoryEntries(ids);
         }
 
         if (toAdd.length) {
             // Check for slug conflicts in target folders
-            const targetFolderIds = toAdd.join(",");
-            const existingSlugs = await supabaseFetch<{ parent_id: string; slug: string }[]>(
-                `sh_directory?parent_id=in.(${targetFolderIds})&select=parent_id,slug`
-            );
+            const slugsResult = await getExistingSlugs(toAdd);
             const slugsByParent = new Map<string, Set<string>>();
-            existingSlugs.forEach((entry) => {
-                if (!slugsByParent.has(entry.parent_id)) {
-                    slugsByParent.set(entry.parent_id, new Set());
-                }
-                slugsByParent.get(entry.parent_id)?.add(entry.slug);
-            });
+            if (slugsResult.success && slugsResult.data) {
+                slugsResult.data.forEach((entry) => {
+                    if (!slugsByParent.has(entry.parent_id)) {
+                        slugsByParent.set(entry.parent_id, new Set());
+                    }
+                    slugsByParent.get(entry.parent_id)?.add(entry.slug);
+                });
+            }
 
             // Generate unique slugs for each placement
             const getUniqueSlug = (parentId: string, baseSlug: string): string => {
@@ -573,36 +589,33 @@ export const DirectoryApp = ({
                 return `${baseSlug}-${counter}`;
             };
 
-            await supabaseUpsert(
-                "sh_directory",
-                toAdd.map((placementId) => {
-                    const folder = allFoldersById.get(placementId);
-                    const deptId = folder?.department_id ?? selectedDepartmentId;
-                    const uniqueSlug = getUniqueSlug(placementId, slug);
-                    // Add the slug to the set so subsequent placements in the same folder get unique slugs
-                    if (!slugsByParent.has(placementId)) {
-                        slugsByParent.set(placementId, new Set());
-                    }
-                    slugsByParent.get(placementId)?.add(uniqueSlug);
-                    return {
-                        department_id: deptId,
-                        parent_id: placementId,
-                        frame_id: frame.id,
-                        name,
-                        slug: uniqueSlug,
-                        emoji: pageForm.emoji || null,
-                        type: "frame" as const,
-                        created_by: worker?.id ?? null,
-                        updated_by: worker?.id ?? null,
-                    };
-                }),
-            );
+            const newEntries = toAdd.map((placementId) => {
+                const folder = allFoldersById.get(placementId);
+                const deptId = folder?.department_id ?? selectedDepartmentId;
+                const uniqueSlug = getUniqueSlug(placementId, slug);
+                // Add the slug to the set so subsequent placements in the same folder get unique slugs
+                if (!slugsByParent.has(placementId)) {
+                    slugsByParent.set(placementId, new Set());
+                }
+                slugsByParent.get(placementId)?.add(uniqueSlug);
+                return {
+                    department_id: deptId,
+                    parent_id: placementId,
+                    frame_id: frame.id,
+                    name,
+                    slug: uniqueSlug,
+                    emoji: pageForm.emoji || null,
+                    type: "frame" as const,
+                };
+            });
+
+            await createDirectoryEntries(newEntries);
         }
 
         setPageForm(emptyForm);
         setEditPageOpen(false);
         clearSelectedItems(pagePlacements);
-        await refreshData(selectedDepartmentId);
+        invalidateEntriesAndFrames();
     };
 
     const handleFolderSelected = useCallback((key: string | number) => {

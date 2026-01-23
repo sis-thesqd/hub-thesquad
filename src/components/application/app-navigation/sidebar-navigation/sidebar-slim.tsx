@@ -1,9 +1,10 @@
 "use client";
 
 import type { FC } from "react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { LifeBuoy01, LogOut01, SearchLg, Settings01, Star01 } from "@untitledui/icons";
 import { AnimatePresence, motion } from "motion/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button as AriaButton, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { AvatarLabelGroup } from "@/components/base/avatar/avatar-label-group";
@@ -13,6 +14,8 @@ import { UntitledLogo } from "@/components/foundations/logo/untitledui-logo";
 import { useAuth } from "@/providers/auth-provider";
 import { cx } from "@/utils/cx";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
+import { favoritesKeys, fetchFavorites } from "@/hooks/use-favorites";
+import { usePrefetchDirectory } from "@/hooks/use-directory-queries";
 import { MobileNavigationHeader } from "../base-components/mobile-header";
 import { NavAccountMenu } from "../base-components/nav-account-card";
 import { NavItemBase } from "../base-components/nav-item";
@@ -44,6 +47,8 @@ interface SidebarNavigationSlimProps {
 export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hideBorder, hideRightBorder, onSearchClick }: SidebarNavigationSlimProps) => {
     const { worker, userEmail } = useAuth();
     const appendUrlParams = useAppendUrlParams();
+    const queryClient = useQueryClient();
+    const { prefetchAll: prefetchDirectory } = usePrefetchDirectory();
     const activeItem = [...items, ...footerItems].find((item) => item.href === activeUrl || item.items?.some((subItem) => subItem.href === activeUrl));
     const fallbackItem = items[0] || footerItems[0] || { label: "", href: "", icon: LifeBuoy01 };
     const [currentItem, setCurrentItem] = useState(activeItem || fallbackItem);
@@ -53,6 +58,24 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
     const initials = getInitials(worker?.given_name, worker?.family_name);
 
     const isSecondarySidebarVisible = isHovering && Boolean(currentItem.items?.length);
+
+    // Prefetch favorites data when hovering over favorites link
+    const handleFavoritesHover = useCallback(() => {
+        if (!worker?.id) return;
+
+        const queryKey = favoritesKeys.user(worker.id);
+        
+        // Use ensureQueryData which waits for data to be available
+        // This ensures data is ready before navigation happens
+        queryClient.ensureQueryData({
+            queryKey,
+            queryFn: () => fetchFavorites(worker.id!),
+            staleTime: 1 * 60 * 1000, // 1 minute
+        });
+        
+        // Prefetch directory data (needed for favorites view)
+        prefetchDirectory();
+    }, [worker?.id, queryClient, prefetchDirectory]);
 
     const MAIN_SIDEBAR_WIDTH = 68;
     const SECONDARY_SIDEBAR_WIDTH = 268;
@@ -118,6 +141,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
 
                     <a
                         href={appendUrlParams("/favorites")}
+                        onMouseEnter={handleFavoritesHover}
                         className={cx(
                             "flex cursor-pointer size-10 items-center justify-center rounded-lg text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary",
                             activeUrl === "/favorites" && "bg-active text-fg-quaternary_hover"

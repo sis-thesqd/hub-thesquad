@@ -12,8 +12,8 @@ import { CreateFolderModal, CreatePageModal } from "@/components/app/directory-a
 import { emptyForm, getRandomEmoji } from "@/components/app/directory-app/constants";
 import type { FormState } from "@/components/app/directory-app/types";
 import type { Frame } from "@/utils/supabase/types";
-import { supabaseUpsert } from "@/utils/supabase/rest";
 import { getIconByName } from "@/utils/icon-map";
+import { createFolder, createPage } from "@/app/api/directory/actions";
 import { useAuth } from "@/providers/auth-provider";
 import { useAppendUrlParams, useUrlParams } from "@/hooks/use-url-params";
 import { Button } from "@/components/base/buttons/button";
@@ -38,7 +38,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     const { worker } = useAuth();
 
     // React Query for data fetching - data persists across navigation
-    const { departments, navigationPages, entries, frames, refetchAll } = useDirectoryQueries();
+    const { departments, navigationPages, entries, frames, refetchAll, isLoading: isDirectoryLoading } = useDirectoryQueries();
     const { invalidateEntriesAndFrames } = useInvalidateDirectory();
 
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
@@ -52,6 +52,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
         favoriteEntryIds,
         toggleFavorite,
         isLoading: isFavoritesLoading,
+        hasLoaded: hasFavoritesLoaded,
     } = useFavorites({ userId: worker?.id });
 
     // Home page modal states
@@ -191,16 +192,18 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                 parentId = placementId as string;
             }
 
-            await supabaseUpsert("sh_directory", {
+            const result = await createFolder({
                 department_id: targetDepartmentId,
                 parent_id: parentId,
                 name: homeFolderForm.name,
                 slug: homeFolderForm.slug,
                 emoji: homeFolderForm.emoji || null,
-                type: "folder",
-                created_by: worker?.id || null,
-                updated_by: worker?.id || null,
             });
+
+            if (!result.success) {
+                console.error("Failed to create folder:", result.error);
+                return;
+            }
 
             invalidateEntriesAndFrames();
             setHomeCreateFolderOpen(false);
@@ -215,20 +218,8 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
         try {
             const departmentIds = homePageDepartments.items.map((item) => item.id as string);
 
-            // Create the frame
-            const frameResult = await supabaseUpsert<Frame>("sh_frames", {
-                name: homePageForm.name,
-                iframe_url: homePageForm.iframeUrl,
-                description: homePageForm.description || null,
-                department_ids: departmentIds,
-                created_by: worker?.id || null,
-                updated_by: worker?.id || null,
-            });
-
-            if (!frameResult?.id) throw new Error("Failed to create frame");
-
-            // Create directory entries for each placement
-            for (const placement of homePagePlacements.items) {
+            // Build placements array
+            const placements = homePagePlacements.items.map((placement) => {
                 const placementId = placement.id as string;
                 let targetDepartmentId: string;
                 let parentId: string | null = null;
@@ -237,22 +228,33 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                     targetDepartmentId = departmentIds[0];
                 } else {
                     const parentFolder = entries.find((e) => e.id === placementId);
-                    if (!parentFolder) continue;
-                    targetDepartmentId = parentFolder.department_id;
-                    parentId = placementId;
+                    if (!parentFolder) {
+                        targetDepartmentId = departmentIds[0];
+                    } else {
+                        targetDepartmentId = parentFolder.department_id;
+                        parentId = placementId;
+                    }
                 }
 
-                await supabaseUpsert("sh_directory", {
+                return {
                     department_id: targetDepartmentId,
                     parent_id: parentId,
-                    frame_id: frameResult.id,
-                    name: homePageForm.name,
                     slug: homePageForm.slug,
                     emoji: homePageForm.emoji || null,
-                    type: "frame",
-                    created_by: worker?.id || null,
-                    updated_by: worker?.id || null,
-                });
+                };
+            });
+
+            const result = await createPage({
+                name: homePageForm.name,
+                iframe_url: homePageForm.iframeUrl,
+                description: homePageForm.description || null,
+                department_ids: departmentIds,
+                placements,
+            });
+
+            if (!result.success) {
+                console.error("Failed to create page:", result.error);
+                return;
             }
 
             invalidateEntriesAndFrames();
@@ -260,7 +262,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
         } catch (err) {
             console.error("Failed to create page:", err);
         }
-    }, [homePageForm, homePageDepartments.items, homePagePlacements.items, worker, entries, invalidateEntriesAndFrames]);
+    }, [homePageForm, homePageDepartments.items, homePagePlacements.items, entries, invalidateEntriesAndFrames]);
 
     const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
         if (type === "department") {
@@ -396,7 +398,8 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                                 departments={departments}
                                 navigationPages={navigationPages}
                                 onToggleFavorite={(entryId, departmentId) => toggleFavorite(entryId, departmentId)}
-                                isLoading={isFavoritesLoading}
+                                isLoading={isFavoritesLoading || isDirectoryLoading}
+                                hasLoaded={hasFavoritesLoaded && !isDirectoryLoading}
                             />
                         ) : isHomePage ? (
                             <>
