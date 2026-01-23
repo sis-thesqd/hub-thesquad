@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { RouteProvider } from "@/providers/router-provider";
 import { AuthProvider } from "@/providers/auth-provider";
+import { QueryProvider } from "@/providers/query-provider";
 import { Theme } from "@/providers/theme";
 import "@/styles/globals.css";
 import { cx } from "@/utils/cx";
@@ -31,9 +32,11 @@ export default function RootLayout({
         <html lang="en" suppressHydrationWarning>
             <body className={cx(inter.variable, "bg-primary antialiased")}>
                 <RouteProvider>
-                    <Theme>
-                        <AuthProvider>{children}</AuthProvider>
-                    </Theme>
+                    <QueryProvider>
+                        <Theme>
+                            <AuthProvider>{children}</AuthProvider>
+                        </Theme>
+                    </QueryProvider>
                 </RouteProvider>
             </body>
         </html>

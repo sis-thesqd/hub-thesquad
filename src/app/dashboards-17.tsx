@@ -11,8 +11,8 @@ import { DirectoryCommandMenu } from "@/components/app/directory-app/components/
 import { CreateFolderModal, CreatePageModal } from "@/components/app/directory-app/components/modals";
 import { emptyForm, getRandomEmoji } from "@/components/app/directory-app/constants";
 import type { FormState } from "@/components/app/directory-app/types";
-import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment, ShConfig } from "@/utils/supabase/types";
-import { supabaseFetch, supabaseUpsert, invalidateCache } from "@/utils/supabase/rest";
+import type { Frame } from "@/utils/supabase/types";
+import { supabaseUpsert } from "@/utils/supabase/rest";
 import { getIconByName } from "@/utils/icon-map";
 import { useAuth } from "@/providers/auth-provider";
 import { useAppendUrlParams, useUrlParams } from "@/hooks/use-url-params";
@@ -22,6 +22,7 @@ import { HomeGrid } from "./components/home-grid";
 import { RecentPages } from "./components/recent-pages";
 import { FavoritesView } from "./components/favorites-view";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useDirectoryQueries, useInvalidateDirectory } from "@/hooks/use-directory-queries";
 
 interface Dashboard17Props {
     initialDepartmentId?: string;
@@ -34,10 +35,11 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     const urlParams = useUrlParams();
     const appendUrlParams = useAppendUrlParams();
     const { worker } = useAuth();
-    const [departments, setDepartments] = useState<RipplingDepartment[]>([]);
-    const [navigationPages, setNavigationPages] = useState<NavigationPage[]>([]);
-    const [entries, setEntries] = useState<DirectoryEntry[]>([]);
-    const [frames, setFrames] = useState<Frame[]>([]);
+
+    // React Query for data fetching - data persists across navigation
+    const { departments, navigationPages, entries, frames, refetchAll } = useDirectoryQueries();
+    const { invalidateEntriesAndFrames } = useInvalidateDirectory();
+
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
     const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
     const [commandMenuOpen, setCommandMenuOpen] = useState(false);
@@ -72,33 +74,6 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     useEffect(() => {
         setSelectedDepartmentId(initialDepartmentId ?? "");
     }, [initialDepartmentId]);
-
-    const loadData = useCallback(async () => {
-        try {
-            const [deptData, configData, entriesData, framesData] = await Promise.all([
-                supabaseFetch<RipplingDepartment[]>("rippling_departments?select=id,name&order=name.asc"),
-                supabaseFetch<ShConfig<NavigationPage[]>[]>("sh_config?key=eq.navigation_pages&select=value"),
-                supabaseFetch<DirectoryEntry[]>("sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&order=name.asc"),
-                supabaseFetch<Frame[]>("sh_frames?select=id,name,description,iframe_url,department_ids,created_at&order=name.asc"),
-            ]);
-
-            setDepartments(deptData);
-            setEntries(entriesData);
-            setFrames(framesData);
-
-            if (configData?.[0]?.value) {
-                setNavigationPages(configData[0].value);
-            }
-        } catch {
-            setDepartments([]);
-            setEntries([]);
-            setFrames([]);
-        }
-    }, []);
-
-    useEffect(() => {
-        void loadData();
-    }, [loadData]);
 
     const departmentItems = useMemo(() => {
         return navigationPages.map((page) => {
@@ -224,13 +199,12 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                 updated_by: worker?.id || null,
             });
 
-            invalidateCache("sh_directory");
-            await loadData();
+            invalidateEntriesAndFrames();
             setHomeCreateFolderOpen(false);
         } catch (err) {
             console.error("Failed to create folder:", err);
         }
-    }, [homeFolderForm, homePagePlacements.items, worker, departments, entries, loadData]);
+    }, [homeFolderForm, homePagePlacements.items, worker, departments, entries, invalidateEntriesAndFrames]);
 
     const handleHomeCreatePage = useCallback(async () => {
         if (!homePageForm.name || !homePageForm.iframeUrl || homePageDepartments.items.length === 0 || homePagePlacements.items.length === 0) return;
@@ -278,14 +252,12 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                 });
             }
 
-            invalidateCache("sh_directory");
-            invalidateCache("sh_frames");
-            await loadData();
+            invalidateEntriesAndFrames();
             setHomeCreatePageOpen(false);
         } catch (err) {
             console.error("Failed to create page:", err);
         }
-    }, [homePageForm, homePageDepartments.items, homePagePlacements.items, worker, entries, loadData]);
+    }, [homePageForm, homePageDepartments.items, homePagePlacements.items, worker, entries, invalidateEntriesAndFrames]);
 
     const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
         if (type === "department") {

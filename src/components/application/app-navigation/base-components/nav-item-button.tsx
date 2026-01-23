@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { Pressable } from "react-aria-components";
 import { FileCode01, Folder } from "@untitledui/icons";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { cx } from "@/utils/cx";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
@@ -57,55 +58,24 @@ export const NavItemButton = ({
 }: NavItemButtonProps) => {
     const appendUrlParams = useAppendUrlParams();
     const [isHovered, setIsHovered] = useState(false);
-    const [children, setChildren] = useState<DirectoryEntry[]>([]);
-    const [frames, setFrames] = useState<Frame[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
     const buttonRef = useRef<HTMLAnchorElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    useEffect(() => {
-        if (!isHovered || !departmentId) {
-            setChildren([]);
-            return;
-        }
-
-        let isMounted = true;
-
-        const loadChildren = async () => {
-            setIsLoading(true);
-            try {
-                // Load ALL entries for this department (not just top-level)
-                const filter = `department_id=eq.${encodeURIComponent(departmentId)}`;
-                const entriesData = await supabaseFetch<DirectoryEntry[]>(
-                    `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&${filter}&order=sort_order.asc.nullslast,name.asc`,
-                );
-                
-                // Load frames for reference
-                const framesData = await supabaseFetch<Frame[]>("sh_frames?select=id,name,iframe_url,description,department_ids&order=name.asc");
-                
-                if (isMounted) {
-                    setChildren(entriesData);
-                    setFrames(framesData);
-                }
-            } catch (err) {
-                console.error("Failed to load children:", err);
-                if (isMounted) {
-                    setChildren([]);
-                }
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        void loadChildren();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [isHovered, departmentId]);
+    // Use React Query for caching department children - data persists across hovers
+    const { data: children = [], isLoading } = useQuery({
+        queryKey: ["department-children", departmentId],
+        queryFn: async () => {
+            const filter = `department_id=eq.${encodeURIComponent(departmentId!)}`;
+            return supabaseFetch<DirectoryEntry[]>(
+                `sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&${filter}&order=sort_order.asc.nullslast,name.asc`,
+                { skipCache: true }
+            );
+        },
+        enabled: isHovered && Boolean(departmentId),
+        staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
+        gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    });
 
     // Handle hover with delay to prevent closing when moving cursor
     const handleMouseEnter = () => {
