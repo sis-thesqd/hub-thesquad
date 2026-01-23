@@ -109,9 +109,17 @@ export const DirectoryApp = ({
             clearSelectedItems(pagePlacements);
             // Prefill with user's department if available
             if (worker?.department_id) {
-                const userDept = departmentItems.find((d) => d.id === worker.department_id);
+                const userDept = departments.find((d) => d.id === worker.department_id);
                 if (userDept) {
-                    replaceSelectedItems(pageDepartments, [{ id: userDept.id, label: userDept.label, icon: userDept.icon }]);
+                    // Get icon from navigation pages
+                    const deptSlug = userDept.name
+                        ?.toLowerCase()
+                        .trim()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/(^-|-$)+/g, "");
+                    const navPage = navigationPages.find((page) => page.slug === deptSlug);
+                    const Icon = navPage ? getIconByName(navPage.icon, FolderClosed) : FolderClosed;
+                    replaceSelectedItems(pageDepartments, [{ id: userDept.id, label: userDept.name ?? userDept.id, icon: Icon }]);
                 } else {
                     clearSelectedItems(pageDepartments);
                 }
@@ -122,7 +130,7 @@ export const DirectoryApp = ({
         }
 
         onModalActionHandled?.();
-    }, [initialModalAction, selectedDepartmentId, clearSelectedItems, replaceSelectedItems, pagePlacements, pageDepartments, departmentItems, worker?.department_id, onModalActionHandled]);
+    }, [initialModalAction, selectedDepartmentId, clearSelectedItems, replaceSelectedItems, pagePlacements, pageDepartments, departments, navigationPages, worker?.department_id, onModalActionHandled]);
 
     const folderOptions = useMemo(() => {
         const options = allFolders.map((folder) => {
