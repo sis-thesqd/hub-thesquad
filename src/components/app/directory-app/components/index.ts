@@ -6,4 +6,5 @@ export { DirectoryHeader } from "./directory-header";
 export { EmbeddedHeaderContent } from "./embedded-header-content";
 export { EmbeddedFolderHeader } from "./embedded-folder-header";
 export { IframeView } from "./iframe-view";
+export { DirectoryCommandMenu } from "./directory-command-menu";
 export * from "./modals";

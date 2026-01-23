@@ -632,9 +632,6 @@ export const DirectoryApp = ({
                             {/* Folders Section */}
                             {visibleFolders.length > 0 && (
                                 <div className="mb-8">
-                                    <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-tertiary">
-                                        Folders
-                                    </h2>
                                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                         {visibleFolders.map((child) => {
                                             const path = pathById.get(child.id) ?? [child.slug];

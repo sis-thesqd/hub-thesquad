@@ -2,7 +2,7 @@
 
 import type { FC } from "react";
 import { useState } from "react";
-import { LifeBuoy01, LogOut01, Settings01 } from "@untitledui/icons";
+import { LifeBuoy01, LogOut01, SearchLg, Settings01 } from "@untitledui/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { Button as AriaButton, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -36,9 +36,11 @@ interface SidebarNavigationSlimProps {
     hideBorder?: boolean;
     /** Whether to hide the right side border. */
     hideRightBorder?: boolean;
+    /** Handler for search button click. */
+    onSearchClick?: () => void;
 }
 
-export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hideBorder, hideRightBorder }: SidebarNavigationSlimProps) => {
+export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hideBorder, hideRightBorder, onSearchClick }: SidebarNavigationSlimProps) => {
     const { worker, userEmail } = useAuth();
     const activeItem = [...items, ...footerItems].find((item) => item.href === activeUrl || item.items?.some((subItem) => subItem.href === activeUrl));
     const fallbackItem = items[0] || footerItems[0] || { label: "", href: "", icon: LifeBuoy01 };
@@ -94,7 +96,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                         );
                     })}
                 </ul>
-                <div className="mt-auto flex flex-col gap-4 px-3 py-5">
+                <div className="mt-auto flex flex-col gap-2 px-3 py-5">
                     {footerItems.length > 0 && (
                         <ul className="flex flex-col gap-0.5">
                             {footerItems.map((item) => (
@@ -110,6 +112,17 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                                 </li>
                             ))}
                         </ul>
+                    )}
+
+                    {onSearchClick && (
+                        <button
+                            type="button"
+                            onClick={onSearchClick}
+                            className="flex size-10 items-center justify-center rounded-lg text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary"
+                            title="Search (⌘K)"
+                        >
+                            <SearchLg className="size-5" />
+                        </button>
                     )}
 
                     <AriaDialogTrigger>
