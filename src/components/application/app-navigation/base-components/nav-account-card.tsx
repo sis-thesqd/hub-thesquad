@@ -4,8 +4,7 @@ import type { FC, HTMLAttributes } from "react";
 import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Placement } from "@react-types/overlays";
-import { ChevronSelectorVertical, LogOut01, Monitor01, Moon01, Sun } from "@untitledui/icons";
-import { useTheme } from "next-themes";
+import { ChevronSelectorVertical, LogOut01, Settings01 } from "@untitledui/icons";
 import { useFocusManager } from "react-aria";
 import type { DialogProps as AriaDialogProps } from "react-aria-components";
 import { Button as AriaButton, Dialog as AriaDialog, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover, OverlayTriggerStateContext } from "react-aria-components";
@@ -30,7 +29,6 @@ export const NavAccountMenu = ({
     const dialogRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const { signOut, worker, userEmail } = useAuth();
-    const { theme, setTheme } = useTheme();
 
     const fullName = [worker?.given_name, worker?.family_name].filter(Boolean).join(" ") || "User";
 
@@ -38,6 +36,11 @@ export const NavAccountMenu = ({
         await signOut();
         router.push("/login");
     }, [signOut, router]);
+
+    const handleSettings = useCallback(() => {
+        onClose?.();
+        router.push("/settings");
+    }, [onClose, router]);
 
     const onKeyDown = useCallback(
         (e: KeyboardEvent) => {
@@ -75,35 +78,12 @@ export const NavAccountMenu = ({
             <div className="rounded-xl bg-primary ring-1 ring-secondary">
                 <div className="flex flex-col gap-0.5 py-1.5">
                     <div className="px-3 py-2">
-                        <p className="text-xs font-medium text-tertiary">Theme</p>
+                        <p className="text-sm font-semibold text-primary">{fullName}</p>
+                        {userEmail && <p className="text-xs text-tertiary">{userEmail}</p>}
                     </div>
-                    <NavAccountCardMenuItem
-                        label="System"
-                        icon={Monitor01}
-                        onClick={() => setTheme("system")}
-                        isSelected={theme === "system"}
-                    />
-                    <NavAccountCardMenuItem
-                        label="Light"
-                        icon={Sun}
-                        onClick={() => setTheme("light")}
-                        isSelected={theme === "light"}
-                    />
-                    <NavAccountCardMenuItem
-                        label="Dark"
-                        icon={Moon01}
-                        onClick={() => setTheme("dark")}
-                        isSelected={theme === "dark"}
-                    />
+                    <NavAccountCardMenuItem label="Settings" icon={Settings01} onClick={handleSettings} />
+                    <NavAccountCardMenuItem label="Sign out" icon={LogOut01} shortcut="⌥⇧Q" onClick={handleSignOut} />
                 </div>
-            </div>
-
-            <div className="flex flex-col gap-0.5 pt-1 pb-1.5">
-                <div className="px-3 py-2">
-                    <p className="text-sm font-semibold text-primary">{fullName}</p>
-                    {userEmail && <p className="text-xs text-tertiary">{userEmail}</p>}
-                </div>
-                <NavAccountCardMenuItem label="Sign out" icon={LogOut01} shortcut="⌥⇧Q" onClick={handleSignOut} />
             </div>
         </AriaDialog>
     );

@@ -74,6 +74,16 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
+// Dev mode email for localhost bypass
+const DEV_EMAIL = "jacob@churchmediasquad.com";
+
+// Check if running on localhost
+const isLocalhost = () => {
+    if (typeof window === "undefined") return false;
+    const hostname = window.location.hostname;
+    return hostname === "localhost" || hostname === "127.0.0.1";
+};
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
@@ -100,12 +110,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
 
     const refreshWorker = async () => {
-        if (!user?.email) return;
-        const workerData = await fetchWorker(user.email);
+        const email = isLocalhost() ? DEV_EMAIL : user?.email;
+        if (!email) return;
+        const workerData = await fetchWorker(email);
         setWorker(workerData);
     };
 
     const signOut = async () => {
+        // Don't actually sign out on localhost
+        if (isLocalhost()) {
+            return;
+        }
         setIsLoading(true);
         const { error } = await supabase.auth.signOut();
         if (error) {
@@ -120,6 +135,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     useEffect(() => {
         const initializeAuth = async () => {
             try {
+                // Localhost bypass - auto-login as dev user
+                if (isLocalhost()) {
+                    const workerData = await fetchWorker(DEV_EMAIL);
+                    if (workerData) {
+                        // Create a mock user for localhost
+                        const mockUser = {
+                            id: workerData.id,
+                            email: DEV_EMAIL,
+                            app_metadata: {},
+                            user_metadata: {},
+                            aud: "authenticated",
+                            created_at: new Date().toISOString(),
+                        } as User;
+
+                        setUser(mockUser);
+                        setWorker(workerData);
+                        setSession({ user: mockUser } as Session);
+                    }
+                    setIsLoading(false);
+                    return;
+                }
+
                 const {
                     data: { session },
                 } = await supabase.auth.getSession();
@@ -153,6 +190,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         };
 
         initializeAuth();
+
+        // Skip auth listener on localhost
+        if (isLocalhost()) {
+            return;
+        }
 
         // Listen for auth changes
         const {

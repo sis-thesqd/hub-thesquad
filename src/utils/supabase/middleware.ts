@@ -11,6 +11,13 @@ export const updateSession = async (request: NextRequest) => {
         return NextResponse.next({ request });
     }
 
+    // Bypass auth on localhost
+    const host = request.headers.get("host") || "";
+    const isLocalhost = host.startsWith("localhost") || host.startsWith("127.0.0.1");
+    if (isLocalhost) {
+        return NextResponse.next({ request });
+    }
+
     let supabaseResponse = NextResponse.next({
         request,
     });

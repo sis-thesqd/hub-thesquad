@@ -37,6 +37,7 @@ export type DirectoryPlacement = {
 };
 
 export type NavigationPage = {
+    department_id: string;
     slug: string;
     title: string;
     icon: string;
