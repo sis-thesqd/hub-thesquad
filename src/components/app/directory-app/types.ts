@@ -13,6 +13,8 @@ export type DirectoryAppProps = {
     onHeaderContentChange?: (content: React.ReactNode | null) => void;
     initialModalAction?: "folder" | "page" | null;
     onModalActionHandled?: () => void;
+    favoriteEntryIds?: string[];
+    onToggleFavorite?: (entryId: string) => void;
 };
 
 export type FormState = {

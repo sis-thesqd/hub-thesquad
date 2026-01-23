@@ -4,14 +4,17 @@ import Link from "next/link";
 import { FileCode01 } from "@untitledui/icons";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
+import { FavoriteButton } from "./favorite-button";
 
 type PageCardProps = {
     entry: DirectoryEntry;
     path: string[];
     frame: Frame | null;
+    isFavorite?: boolean;
+    onToggleFavorite?: () => void;
 };
 
-export const PageCard = ({ entry, path, frame }: PageCardProps) => {
+export const PageCard = ({ entry, path, frame, isFavorite = false, onToggleFavorite }: PageCardProps) => {
     const appendUrlParams = useAppendUrlParams();
     const basePath = `/${entry.department_id}/${path.join("/")}`;
     const href = appendUrlParams(basePath);
@@ -36,6 +39,9 @@ export const PageCard = ({ entry, path, frame }: PageCardProps) => {
                     </p>
                 )}
             </div>
+            {onToggleFavorite && (
+                <FavoriteButton isFavorite={isFavorite} onToggle={onToggleFavorite} />
+            )}
         </Link>
     );
 };

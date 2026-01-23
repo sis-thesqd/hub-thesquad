@@ -20,13 +20,16 @@ import { Button } from "@/components/base/buttons/button";
 import type { SelectItemType } from "@/components/base/select/select";
 import { HomeGrid } from "./components/home-grid";
 import { RecentPages } from "./components/recent-pages";
+import { FavoritesView } from "./components/favorites-view";
+import { useFavorites } from "@/hooks/use-favorites";
 
 interface Dashboard17Props {
     initialDepartmentId?: string;
     initialPath?: string[];
+    showFavorites?: boolean;
 }
 
-export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Props) => {
+export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = false }: Dashboard17Props) => {
     const router = useRouter();
     const urlParams = useUrlParams();
     const appendUrlParams = useAppendUrlParams();
@@ -39,6 +42,14 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
     const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
     const [commandMenuOpen, setCommandMenuOpen] = useState(false);
 
+    // Favorites hook
+    const {
+        favorites,
+        favoriteDepartmentIds,
+        favoriteEntryIds,
+        toggleFavorite,
+    } = useFavorites({ userId: worker?.id });
+
     // Home page modal states
     const [homeCreateFolderOpen, setHomeCreateFolderOpen] = useState(false);
     const [homeCreatePageOpen, setHomeCreatePageOpen] = useState(false);
@@ -50,7 +61,8 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
     const homePageDepartments = useListData<SelectItemType>({ initialItems: [] });
     const homePagePlacements = useListData<SelectItemType>({ initialItems: [] });
 
-    const isHomePage = !initialDepartmentId;
+    const isHomePage = !initialDepartmentId && !showFavorites;
+    const isFavoritesPage = showFavorites;
 
     // Read modal action from URL params
     const modalParam = urlParams.get("modal");
@@ -380,7 +392,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                     <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:items-center lg:px-8">
                         {headerContent || (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">
-                                {isHomePage ? `Hello, ${firstName}` : ""}
+                                {isHomePage ? `Hello, ${firstName}` : isFavoritesPage ? "Favorites" : ""}
                             </p>
                         )}
                         {isHomePage && departments.length > 0 && (
@@ -396,9 +408,25 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-auto px-4 lg:px-8">
-                        {isHomePage ? (
+                        {isFavoritesPage ? (
+                            <FavoritesView
+                                favorites={favorites}
+                                entries={entries}
+                                frames={frames}
+                                departments={departments}
+                                navigationPages={navigationPages}
+                                onToggleFavorite={(entryId, departmentId) => toggleFavorite(entryId, departmentId)}
+                            />
+                        ) : isHomePage ? (
                             <>
-                                <HomeGrid departments={departments} navigationPages={navigationPages} entries={entries} userDepartmentId={worker?.department_id ?? null} />
+                                <HomeGrid
+                                    departments={departments}
+                                    navigationPages={navigationPages}
+                                    entries={entries}
+                                    userDepartmentId={worker?.department_id ?? null}
+                                    favoriteDepartmentIds={favoriteDepartmentIds}
+                                    onToggleFavorite={(deptId) => toggleFavorite(undefined, deptId)}
+                                />
                                 <RecentPages
                                     entries={entries}
                                     frames={frames}
@@ -426,6 +454,8 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                                         : window.location.pathname;
                                     router.replace(newUrl);
                                 }}
+                                favoriteEntryIds={favoriteEntryIds}
+                                onToggleFavorite={toggleFavorite}
                             />
                         )}
                     </div>

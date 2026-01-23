@@ -1,5 +1,6 @@
-import { Edit01, Plus } from "@untitledui/icons";
+import { Plus, Star01 } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
+import { cx } from "@/utils/cx";
 
 type EmbeddedFolderHeaderProps = {
     folderName: string;
@@ -7,6 +8,8 @@ type EmbeddedFolderHeaderProps = {
     onEditFolder: () => void;
     onNewFolder: () => void;
     onNewPage: () => void;
+    isFavorite?: boolean;
+    onToggleFavorite?: () => void;
 };
 
 export const EmbeddedFolderHeader = ({
@@ -15,12 +18,29 @@ export const EmbeddedFolderHeader = ({
     onEditFolder,
     onNewFolder,
     onNewPage,
+    isFavorite = false,
+    onToggleFavorite,
 }: EmbeddedFolderHeaderProps) => {
     return (
         <>
-            <h1 className="text-xl font-semibold text-primary lg:text-display-xs">
-                {folderName}
-            </h1>
+            <div className="flex items-center gap-2">
+                <h1 className="text-xl font-semibold text-primary lg:text-display-xs">
+                    {folderName}
+                </h1>
+                {onToggleFavorite && (
+                    <button
+                        type="button"
+                        onClick={onToggleFavorite}
+                        className={cx(
+                            "flex size-8 cursor-pointer items-center justify-center rounded-md transition hover:bg-secondary",
+                            isFavorite ? "text-warning-primary" : "text-fg-quaternary"
+                        )}
+                        title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                    >
+                        <Star01 className={cx("size-5", isFavorite && "fill-warning-primary")} />
+                    </button>
+                )}
+            </div>
             <div className="flex items-center gap-2">
                 {showEditButton && (
                     <Button

@@ -1,19 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { Star01 } from "@untitledui/icons";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { Badge } from "@/components/base/badges/badges";
 import type { DirectoryEntry, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
+import { cx } from "@/utils/cx";
 
 interface HomeGridProps {
     departments: RipplingDepartment[];
     navigationPages: NavigationPage[];
     entries: DirectoryEntry[];
     userDepartmentId: string | null;
+    favoriteDepartmentIds?: string[];
+    onToggleFavorite?: (departmentId: string) => void;
 }
 
-export const HomeGrid = ({ departments, navigationPages, entries, userDepartmentId }: HomeGridProps) => {
+export const HomeGrid = ({ departments, navigationPages, entries, userDepartmentId, favoriteDepartmentIds = [], onToggleFavorite }: HomeGridProps) => {
     const appendUrlParams = useAppendUrlParams();
 
     // Calculate folder and page counts per department
@@ -62,6 +66,7 @@ export const HomeGrid = ({ departments, navigationPages, entries, userDepartment
                 const Icon = getIconByName(item.icon);
                 const href = item.href !== "#" ? appendUrlParams(item.href) : item.href;
                 const isUserDepartment = item.departmentId === userDepartmentId;
+                const isFavorite = item.departmentId ? favoriteDepartmentIds.includes(item.departmentId) : false;
                 return (
                     <Link
                         key={item.slug}
@@ -84,6 +89,23 @@ export const HomeGrid = ({ departments, navigationPages, entries, userDepartment
                                 {item.folderCount} {item.folderCount === 1 ? "folder" : "folders"} · {item.pageCount} {item.pageCount === 1 ? "page" : "pages"}
                             </p>
                         </div>
+                        {onToggleFavorite && item.departmentId && (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onToggleFavorite(item.departmentId!);
+                                }}
+                                className={cx(
+                                    "flex size-8 cursor-pointer items-center justify-center rounded-md transition hover:bg-secondary",
+                                    isFavorite ? "text-warning-primary" : "text-fg-quaternary opacity-0 group-hover:opacity-100"
+                                )}
+                                title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                            >
+                                <Star01 className={cx("size-4", isFavorite && "fill-warning-primary")} />
+                            </button>
+                        )}
                     </Link>
                 );
             })}

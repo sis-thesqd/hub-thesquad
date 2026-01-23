@@ -42,6 +42,8 @@ export const DirectoryApp = ({
     onHeaderContentChange,
     initialModalAction,
     onModalActionHandled,
+    favoriteEntryIds = [],
+    onToggleFavorite,
 }: DirectoryAppProps) => {
     const router = useRouter();
     const appendUrlParams = useAppendUrlParams();
@@ -83,6 +85,9 @@ export const DirectoryApp = ({
         clearSelectedItems,
         replaceSelectedItems,
     } = useListDataHelpers();
+
+    // Use passed favorites props, with fallback for standalone usage
+    const toggleFavorite = onToggleFavorite ?? (() => {});
 
     const [createFolderOpen, setCreateFolderOpen] = useState(false);
     const [createPageOpen, setCreatePageOpen] = useState(false);
@@ -264,6 +269,8 @@ export const DirectoryApp = ({
                         activeFrame={activeFrame}
                         onEdit={handleEditClick}
                         onCopyUrl={handleCopyUrl}
+                        isFavorite={favoriteEntryIds.includes(activeEntry.id)}
+                        onToggleFavorite={() => toggleFavorite(activeEntry.id)}
                     />
                 );
             } else {
@@ -311,12 +318,14 @@ export const DirectoryApp = ({
                             setError(null);
                             setCreatePageOpen(true);
                         }}
+                        isFavorite={activeEntry ? favoriteEntryIds.includes(activeEntry.id) : false}
+                        onToggleFavorite={activeEntry ? () => toggleFavorite(activeEntry.id) : undefined}
                     />
                 );
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, departmentItems, entries, selectedDepartmentId, entriesById, allFoldersById]);
+    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, departmentItems, entries, selectedDepartmentId, entriesById, allFoldersById, favoriteEntryIds]);
 
     const handleCreateFolder = async (parentId: string | null) => {
         if (!selectedDepartmentId) return;
@@ -703,6 +712,8 @@ export const DirectoryApp = ({
                                                     entry={child}
                                                     path={path}
                                                     childCount={childCount}
+                                                    isFavorite={favoriteEntryIds.includes(child.id)}
+                                                    onToggleFavorite={() => toggleFavorite(child.id)}
                                                 />
                                             );
                                         })}
@@ -726,6 +737,8 @@ export const DirectoryApp = ({
                                                     entry={child}
                                                     path={path}
                                                     frame={frame ?? null}
+                                                    isFavorite={favoriteEntryIds.includes(child.id)}
+                                                    onToggleFavorite={() => toggleFavorite(child.id)}
                                                 />
                                             );
                                         })}

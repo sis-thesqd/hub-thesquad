@@ -1,5 +1,6 @@
 export { FolderCard } from "./folder-card";
 export { PageCard } from "./page-card";
+export { FavoriteButton } from "./favorite-button";
 export { EmptyFolderState } from "./empty-folder-state";
 export { NoDepartmentState } from "./no-department-state";
 export { DirectoryHeader } from "./directory-header";

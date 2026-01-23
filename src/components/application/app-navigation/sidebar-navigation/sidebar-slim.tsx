@@ -2,7 +2,7 @@
 
 import type { FC } from "react";
 import { useState } from "react";
-import { LifeBuoy01, LogOut01, SearchLg, Settings01 } from "@untitledui/icons";
+import { LifeBuoy01, LogOut01, SearchLg, Settings01, Star01 } from "@untitledui/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { Button as AriaButton, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -12,6 +12,7 @@ import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { UntitledLogo } from "@/components/foundations/logo/untitledui-logo";
 import { useAuth } from "@/providers/auth-provider";
 import { cx } from "@/utils/cx";
+import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { MobileNavigationHeader } from "../base-components/mobile-header";
 import { NavAccountMenu } from "../base-components/nav-account-card";
 import { NavItemBase } from "../base-components/nav-item";
@@ -42,6 +43,7 @@ interface SidebarNavigationSlimProps {
 
 export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hideBorder, hideRightBorder, onSearchClick }: SidebarNavigationSlimProps) => {
     const { worker, userEmail } = useAuth();
+    const appendUrlParams = useAppendUrlParams();
     const activeItem = [...items, ...footerItems].find((item) => item.href === activeUrl || item.items?.some((subItem) => subItem.href === activeUrl));
     const fallbackItem = items[0] || footerItems[0] || { label: "", href: "", icon: LifeBuoy01 };
     const [currentItem, setCurrentItem] = useState(activeItem || fallbackItem);
@@ -113,6 +115,17 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                             ))}
                         </ul>
                     )}
+
+                    <a
+                        href={appendUrlParams("/favorites")}
+                        className={cx(
+                            "flex size-10 items-center justify-center rounded-lg text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary",
+                            activeUrl === "/favorites" && "bg-active text-fg-quaternary_hover"
+                        )}
+                        title="Favorites"
+                    >
+                        <Star01 className="size-5" />
+                    </a>
 
                     {onSearchClick && (
                         <button

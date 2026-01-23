@@ -4,14 +4,17 @@ import Link from "next/link";
 import { Folder } from "@untitledui/icons";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import type { DirectoryEntry } from "@/utils/supabase/types";
+import { FavoriteButton } from "./favorite-button";
 
 type FolderCardProps = {
     entry: DirectoryEntry;
     path: string[];
     childCount: number;
+    isFavorite?: boolean;
+    onToggleFavorite?: () => void;
 };
 
-export const FolderCard = ({ entry, path, childCount }: FolderCardProps) => {
+export const FolderCard = ({ entry, path, childCount, isFavorite = false, onToggleFavorite }: FolderCardProps) => {
     const appendUrlParams = useAppendUrlParams();
     const basePath = `/${entry.department_id}/${path.join("/")}`;
     const href = appendUrlParams(basePath);
@@ -34,6 +37,9 @@ export const FolderCard = ({ entry, path, childCount }: FolderCardProps) => {
                     {childCount} {childCount === 1 ? "item" : "items"}
                 </p>
             </div>
+            {onToggleFavorite && (
+                <FavoriteButton isFavorite={isFavorite} onToggle={onToggleFavorite} />
+            )}
         </Link>
     );
 };
