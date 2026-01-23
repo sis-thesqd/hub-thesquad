@@ -13,6 +13,7 @@ import { getIconByName } from "@/utils/icon-map";
 import { useAuth } from "@/providers/auth-provider";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { HomeGrid } from "./components/home-grid";
+import { RecentPages } from "./components/recent-pages";
 
 interface Dashboard17Props {
     initialDepartmentId?: string;
@@ -48,7 +49,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                     supabaseFetch<RipplingDepartment[]>("rippling_departments?select=id,name&order=name.asc"),
                     supabaseFetch<ShConfig<NavigationPage[]>[]>("sh_config?key=eq.navigation_pages&select=value"),
                     supabaseFetch<DirectoryEntry[]>("sh_directory?select=id,department_id,parent_id,frame_id,name,slug,sort_order,emoji&order=name.asc"),
-                    supabaseFetch<Frame[]>("sh_frames?select=id,name,description,iframe_url,department_ids&order=name.asc"),
+                    supabaseFetch<Frame[]>("sh_frames?select=id,name,description,iframe_url,department_ids,created_at&order=name.asc"),
                 ]);
 
                 if (!isMounted) return;
@@ -167,7 +168,14 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
 
                     <div className="min-h-0 flex-1 overflow-auto px-4 lg:px-8">
                         {isHomePage ? (
-                            <HomeGrid departments={departments} navigationPages={navigationPages} />
+                            <>
+                                <HomeGrid departments={departments} navigationPages={navigationPages} />
+                                <RecentPages
+                                    entries={entries}
+                                    frames={frames}
+                                    userDepartmentId={worker?.department_id ?? null}
+                                />
+                            </>
                         ) : (
                             <DirectoryApp
                                 initialDepartmentId={selectedDepartmentId || initialDepartmentId}

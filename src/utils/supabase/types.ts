@@ -3,6 +3,8 @@ export type RipplingDepartment = {
     name: string | null;
 };
 
+export type DirectoryEntryType = "frame" | "folder";
+
 export type DirectoryEntry = {
     id: string;
     department_id: string;
@@ -12,6 +14,9 @@ export type DirectoryEntry = {
     slug: string;
     sort_order: number | null;
     emoji: string | null;
+    type?: DirectoryEntryType;
+    created_by?: string | null;
+    updated_by?: string | null;
 };
 
 export type Frame = {
@@ -20,6 +25,10 @@ export type Frame = {
     iframe_url: string;
     description: string | null;
     department_ids: string[];
+    created_at?: string;
+    updated_at?: string;
+    created_by?: string | null;
+    updated_by?: string | null;
 };
 
 export type DirectoryPlacement = {

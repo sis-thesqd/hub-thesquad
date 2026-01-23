@@ -116,11 +116,8 @@ export const LoginForm = () => {
                 {/* Header */}
                 <div className="mb-8 text-center">
                     <h1 className="text-display-sm font-semibold text-primary">
-                        Welcome to Squad Hub
+                        Squad Hub
                     </h1>
-                    <p className="mt-3 text-md text-tertiary">
-                        Sign in to access your internal tools and resources.
-                    </p>
                 </div>
 
                 {/* Error message */}

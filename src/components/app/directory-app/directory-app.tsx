@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FolderClosed } from "@untitledui/icons";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
+import { useAuth } from "@/providers/auth-provider";
 import { supabaseFetch, supabaseUpsert } from "@/utils/supabase/rest";
 import { getIconByName } from "@/utils/icon-map";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
@@ -43,6 +44,7 @@ export const DirectoryApp = ({
     const router = useRouter();
     const appendUrlParams = useAppendUrlParams();
     const clipboard = useClipboard();
+    const { worker } = useAuth();
 
     const {
         departments,
@@ -292,6 +294,9 @@ export const DirectoryApp = ({
             name,
             slug,
             emoji: folderForm.emoji || null,
+            type: "folder",
+            created_by: worker?.id ?? null,
+            updated_by: worker?.id ?? null,
         });
 
         setFolderForm(emptyForm);
@@ -317,6 +322,9 @@ export const DirectoryApp = ({
             name,
             slug,
             emoji: inlineFolderForm.emoji || null,
+            type: "folder",
+            created_by: worker?.id ?? null,
+            updated_by: worker?.id ?? null,
         });
 
         setInlineFolderForm(emptyForm);
@@ -356,6 +364,8 @@ export const DirectoryApp = ({
             iframe_url: iframeUrl,
             description: pageForm.description.trim() || null,
             department_ids: departmentIds,
+            created_by: worker?.id ?? null,
+            updated_by: worker?.id ?? null,
         });
 
         // Check for slug conflicts in target folders
@@ -403,6 +413,9 @@ export const DirectoryApp = ({
                 name,
                 slug: uniqueSlug,
                 emoji: pageForm.emoji || null,
+                type: "frame" as const,
+                created_by: worker?.id ?? null,
+                updated_by: worker?.id ?? null,
             };
         }));
 
@@ -431,7 +444,7 @@ export const DirectoryApp = ({
 
         await supabaseFetch("sh_directory?id=eq." + entry.id, {
             method: "PATCH",
-            body: { name, slug, emoji: folderForm.emoji || null },
+            body: { name, slug, emoji: folderForm.emoji || null, updated_by: worker?.id ?? null },
             prefer: "return=representation",
         });
 
@@ -457,6 +470,7 @@ export const DirectoryApp = ({
                 iframe_url: iframeUrl,
                 description: pageForm.description.trim() || null,
                 department_ids: pageDepartments.items.map((item) => item.id),
+                updated_by: worker?.id ?? null,
             },
             prefer: "return=representation",
         });
@@ -464,7 +478,7 @@ export const DirectoryApp = ({
         // Update ALL existing directory entries for this frame with new name/slug/emoji
         await supabaseFetch(`sh_directory?frame_id=eq.${frame.id}`, {
             method: "PATCH",
-            body: { name, slug, emoji: pageForm.emoji || null },
+            body: { name, slug, emoji: pageForm.emoji || null, updated_by: worker?.id ?? null },
             prefer: "return=representation",
         });
 
@@ -530,6 +544,9 @@ export const DirectoryApp = ({
                         name,
                         slug: uniqueSlug,
                         emoji: pageForm.emoji || null,
+                        type: "frame" as const,
+                        created_by: worker?.id ?? null,
+                        updated_by: worker?.id ?? null,
                     };
                 }),
             );

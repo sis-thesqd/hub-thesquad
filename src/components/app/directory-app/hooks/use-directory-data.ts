@@ -46,7 +46,7 @@ export const useDirectoryData = ({
     }, []);
 
     const loadFrames = useCallback(async () => {
-        return await supabaseFetch<Frame[]>("sh_frames?select=id,name,iframe_url,description,department_ids&order=name.asc");
+        return await supabaseFetch<Frame[]>("sh_frames?select=id,name,iframe_url,description,department_ids,created_at&order=name.asc");
     }, []);
 
     const loadEntries = useCallback(async (departmentId: string) => {
