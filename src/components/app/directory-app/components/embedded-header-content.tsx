@@ -1,14 +1,16 @@
+import { useMemo } from "react";
 import { ArrowUpRight, Copy01, Edit05, Star01 } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { cx } from "@/utils/cx";
 import type { Frame } from "@/utils/supabase/types";
 import { UrlParamsInfoSlideout } from "./url-params-info-slideout";
+import { useUrlParams } from "@/hooks/use-url-params";
+import { useClipboard } from "@/hooks/use-clipboard";
 
 type EmbeddedHeaderContentProps = {
     activeFrame: Frame;
     onEdit: () => void;
-    onCopyUrl: () => void;
     isFavorite?: boolean;
     onToggleFavorite?: () => void;
 };
@@ -16,12 +18,33 @@ type EmbeddedHeaderContentProps = {
 export const EmbeddedHeaderContent = ({
     activeFrame,
     onEdit,
-    onCopyUrl,
     isFavorite = false,
     onToggleFavorite,
 }: EmbeddedHeaderContentProps) => {
+    const urlParams = useUrlParams();
+    const clipboard = useClipboard();
+
+    // Build URL with merged params (same logic as IframeView)
+    const iframeUrlWithParams = useMemo(() => {
+        if (!activeFrame.iframe_url) return "";
+
+        try {
+            const url = new URL(activeFrame.iframe_url);
+            urlParams.forEach((value, key) => {
+                url.searchParams.set(key, value);
+            });
+            return url.toString();
+        } catch {
+            return activeFrame.iframe_url;
+        }
+    }, [activeFrame.iframe_url, urlParams]);
+
     const handleOpenInNewTab = () => {
-        window.open(activeFrame.iframe_url, "_blank", "noopener,noreferrer");
+        window.open(iframeUrlWithParams, "_blank", "noopener,noreferrer");
+    };
+
+    const handleCopyUrl = async () => {
+        await clipboard.copy(iframeUrlWithParams);
     };
 
     return (
@@ -63,7 +86,7 @@ export const EmbeddedHeaderContent = ({
                         </Dropdown.Item>
                         <Dropdown.Item
                             icon={Copy01}
-                            onAction={onCopyUrl}
+                            onAction={handleCopyUrl}
                         >
                             Copy app link
                         </Dropdown.Item>

@@ -270,15 +270,10 @@ export const DirectoryApp = ({
                     setEditPageOpen(true);
                 };
 
-                const handleCopyUrl = async () => {
-                    await clipboard.copy(activeFrame.iframe_url);
-                };
-
                 onHeaderContentChange(
                     <EmbeddedHeaderContent
                         activeFrame={activeFrame}
                         onEdit={handleEditClick}
-                        onCopyUrl={handleCopyUrl}
                         isFavorite={favoriteEntryIds.includes(activeEntry.id)}
                         onToggleFavorite={() => toggleFavorite(activeEntry.id)}
                     />
