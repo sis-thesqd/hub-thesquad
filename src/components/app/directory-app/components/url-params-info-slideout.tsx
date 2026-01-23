@@ -300,7 +300,6 @@ export const UrlParamsInfoSlideout = ({ iframeUrl }: UrlParamsInfoSlideoutProps)
             <SlideoutMenu isDismissable>
                 <SlideoutMenu.Header onClose={() => setIsOpen(false)} className="relative flex w-full flex-col gap-4 px-4 pt-6 md:px-6">
                     <div className="flex items-start gap-4">
-                        <FeaturedIcon size="md" color="gray" theme="modern" icon={InfoCircle} />
                         <section className="flex flex-col gap-0.5">
                             <h1 className="text-md font-semibold text-primary md:text-lg">Developer Guide</h1>
                             <p className="text-sm text-tertiary">Learn how to integrate with this page</p>
