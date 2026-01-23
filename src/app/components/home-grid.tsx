@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { NavigationPage, RipplingDepartment, ShConfig } from "@/utils/supabase/types";
 import { supabaseFetch } from "@/utils/supabase/rest";
 import { getIconByName } from "@/utils/icon-map";
@@ -11,8 +12,12 @@ interface HomeGridProps {
 }
 
 export const HomeGrid = ({ departments }: HomeGridProps) => {
+    const searchParams = useSearchParams();
     const [navigationPages, setNavigationPages] = useState<NavigationPage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Helper to append search params to paths
+    const queryString = searchParams.toString();
 
     useEffect(() => {
         const loadConfig = async () => {
@@ -45,10 +50,13 @@ export const HomeGrid = ({ departments }: HomeGridProps) => {
             return deptSlug === page.slug;
         });
 
+        const basePath = department ? `/${department.id}` : "#";
+        const href = department && queryString ? `${basePath}?${queryString}` : basePath;
+
         return {
             ...page,
             departmentId: department?.id,
-            href: department ? `/${department.id}` : "#",
+            href,
         };
     });
 

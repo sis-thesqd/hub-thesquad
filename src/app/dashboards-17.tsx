@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FolderClosed } from "@untitledui/icons";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 import { DirectoryApp } from "@/components/app/directory-app";
@@ -20,6 +20,7 @@ interface Dashboard17Props {
 
 export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Props) => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { worker } = useAuth();
     const [departments, setDepartments] = useState<RipplingDepartment[]>([]);
     const [navigationPages, setNavigationPages] = useState<NavigationPage[]>([]);
@@ -94,8 +95,11 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
     }, [departments, navigationPages]);
 
     const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
+        const queryString = searchParams.toString();
+        const appendQuery = (path: string) => queryString ? `${path}?${queryString}` : path;
+
         if (type === "department") {
-            router.push(`/${id}`);
+            router.push(appendQuery(`/${id}`));
         } else if (type === "folder") {
             // Find the folder to get its department and build the path
             const folder = entries.find((e) => e.id === id);
@@ -112,7 +116,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                         break;
                     }
                 }
-                router.push(`/${folder.department_id}/${pathParts.join("/")}`);
+                router.push(appendQuery(`/${folder.department_id}/${pathParts.join("/")}`));
             }
         } else if (type === "page") {
             // Find the frame and its entry to navigate
@@ -131,10 +135,10 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                         break;
                     }
                 }
-                router.push(`/${entry.department_id}/${pathParts.join("/")}`);
+                router.push(appendQuery(`/${entry.department_id}/${pathParts.join("/")}`));
             }
         }
-    }, [entries, frames, router]);
+    }, [entries, frames, router, searchParams]);
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
@@ -151,6 +155,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                 departments={departments}
                 entries={entries}
                 frames={frames}
+                navigationPages={navigationPages}
                 onSelect={handleCommandMenuSelect}
             />
             <main className="min-w-0 flex-1 overflow-hidden lg:pt-2 lg:pl-1">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FolderClosed } from "@untitledui/icons";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { supabaseFetch, supabaseUpsert } from "@/utils/supabase/rest";
@@ -38,6 +38,7 @@ export const DirectoryApp = ({
     onHeaderContentChange,
 }: DirectoryAppProps) => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const clipboard = useClipboard();
 
     const {
@@ -413,7 +414,9 @@ export const DirectoryApp = ({
         const targetPath = parentFolder
             ? buildPathSegments(allFoldersById, parentFolder).concat(firstPlacementSlug)
             : [firstPlacementSlug];
-        router.push(`/${targetDeptId}/${targetPath.join("/")}`);
+        const basePath = `/${targetDeptId}/${targetPath.join("/")}`;
+        const queryString = searchParams.toString();
+        router.push(queryString ? `${basePath}?${queryString}` : basePath);
     };
 
     const handleUpdateFolder = async (entry: DirectoryEntry) => {
