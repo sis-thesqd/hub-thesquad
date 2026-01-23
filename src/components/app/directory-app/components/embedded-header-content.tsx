@@ -59,13 +59,13 @@ export const EmbeddedHeaderContent = ({
                             icon={ArrowUpRight}
                             onAction={handleOpenInNewTab}
                         >
-                            Open in new tab
+                            Open app new tab
                         </Dropdown.Item>
                         <Dropdown.Item
                             icon={Copy01}
                             onAction={onCopyUrl}
                         >
-                            Copy URL
+                            Copy app link
                         </Dropdown.Item>
                     </Dropdown.Menu>
                 </Dropdown.Popover>
