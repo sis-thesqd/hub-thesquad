@@ -44,7 +44,7 @@ export const IframeView = ({ frame }: IframeViewProps) => {
     }, [frame.id]);
 
     return (
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-secondary_alt bg-primary">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-2xl border-x border-t border-secondary_alt bg-primary">
             <iframe
                 title={frame.name}
                 src={iframeSrc}

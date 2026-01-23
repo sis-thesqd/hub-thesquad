@@ -3,7 +3,6 @@ import { Button } from "@/components/base/buttons/button";
 import { cx } from "@/utils/cx";
 
 type EmbeddedFolderHeaderProps = {
-    folderName: string;
     showEditButton: boolean;
     onEditFolder: () => void;
     onNewFolder: () => void;
@@ -13,7 +12,6 @@ type EmbeddedFolderHeaderProps = {
 };
 
 export const EmbeddedFolderHeader = ({
-    folderName,
     showEditButton,
     onEditFolder,
     onNewFolder,
@@ -22,52 +20,45 @@ export const EmbeddedFolderHeader = ({
     onToggleFavorite,
 }: EmbeddedFolderHeaderProps) => {
     return (
-        <>
-            <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold text-primary lg:text-display-xs">
-                    {folderName}
-                </h1>
-                {onToggleFavorite && (
-                    <button
-                        type="button"
-                        onClick={onToggleFavorite}
-                        className={cx(
-                            "flex size-8 cursor-pointer items-center justify-center rounded-md transition hover:bg-secondary",
-                            isFavorite ? "text-warning-primary" : "text-fg-quaternary"
-                        )}
-                        title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                    >
-                        <Star01 className={cx("size-5", isFavorite && "fill-warning-primary")} />
-                    </button>
-                )}
-            </div>
-            <div className="flex items-center gap-2">
-                {showEditButton && (
-                    <Button
-                        size="sm"
-                        color="tertiary"
-                        onClick={onEditFolder}
-                    >
-                        Edit
-                    </Button>
-                )}
+        <div className="flex items-center gap-2">
+            {onToggleFavorite && (
+                <button
+                    type="button"
+                    onClick={onToggleFavorite}
+                    className={cx(
+                        "flex size-8 cursor-pointer items-center justify-center rounded-md transition hover:bg-secondary",
+                        isFavorite ? "text-warning-primary" : "text-fg-quaternary"
+                    )}
+                    title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                >
+                    <Star01 className={cx("size-5", isFavorite && "fill-warning-primary")} />
+                </button>
+            )}
+            {showEditButton && (
                 <Button
                     size="sm"
-                    color="secondary"
-                    iconLeading={Plus}
-                    onClick={onNewFolder}
+                    color="tertiary"
+                    onClick={onEditFolder}
                 >
-                    New folder
+                    Edit
                 </Button>
-                <Button
-                    size="sm"
-                    color="primary"
-                    iconLeading={Plus}
-                    onClick={onNewPage}
-                >
-                    New page
-                </Button>
-            </div>
-        </>
+            )}
+            <Button
+                size="sm"
+                color="secondary"
+                iconLeading={Plus}
+                onClick={onNewFolder}
+            >
+                New folder
+            </Button>
+            <Button
+                size="sm"
+                color="primary"
+                iconLeading={Plus}
+                onClick={onNewPage}
+            >
+                New page
+            </Button>
+        </div>
     );
 };

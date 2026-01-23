@@ -365,20 +365,22 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
             />
 
             <main className="min-w-0 flex-1 overflow-hidden lg:pt-2 lg:pl-1">
-                <div className="flex h-full flex-col gap-8 overflow-hidden border-secondary pt-8 pb-12 lg:rounded-tl-[24px] lg:border-t lg:border-l">
+                <div className={`flex h-full flex-col overflow-hidden border-secondary lg:rounded-tl-[24px] lg:border-t lg:border-l ${isHomePage || isFavoritesPage ? "gap-8 pt-8 pb-12" : "gap-3 pt-4"}`}>
                     <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:items-center lg:px-8">
-                        {headerContent || (
+                        {isHomePage && hasLoadedName ? (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">
-                                {isHomePage && hasLoadedName ? (
-                                    <AnimatedGroup staggerDelay={0.09} distance={4}>
-                                        <span>Hello,</span>
-                                        <span className="inline-block w-2" aria-hidden="true"></span>
-                                        <span>{firstName}</span>
-                                    </AnimatedGroup>
-                                ) : isFavoritesPage ? "Favorites" : ""}
+                                <AnimatedGroup staggerDelay={0.09} distance={4}>
+                                    <span>Hello,</span>
+                                    <span className="inline-block w-2" aria-hidden="true"></span>
+                                    <span>{firstName}</span>
+                                </AnimatedGroup>
                             </p>
+                        ) : isFavoritesPage ? (
+                            <p className="text-xl font-semibold text-primary lg:text-display-xs">Favorites</p>
+                        ) : (
+                            <div className="ml-auto">{headerContent}</div>
                         )}
-                        {isHomePage && departments.length > 0 && (
+                        {!isFavoritesPage && isHomePage && departments.length > 0 && (
                             <div className="flex gap-2">
                                 <Button color="secondary" size="sm" iconLeading={Plus} onClick={handleHomePageNewFolder}>
                                     New folder
@@ -390,7 +392,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                         )}
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-auto px-4 lg:px-8">
+                    <div className={`min-h-0 flex-1 overflow-auto ${isHomePage || isFavoritesPage ? "px-4 lg:px-8" : ""}`}>
                         {isFavoritesPage ? (
                             <FavoritesView
                                 favorites={favorites}

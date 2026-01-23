@@ -276,7 +276,6 @@ export const DirectoryApp = ({
 
                 onHeaderContentChange(
                     <EmbeddedHeaderContent
-                        activeEntry={activeEntry}
                         activeFrame={activeFrame}
                         onEdit={handleEditClick}
                         onCopyUrl={handleCopyUrl}
@@ -285,12 +284,9 @@ export const DirectoryApp = ({
                     />
                 );
             } else {
-                // Folder view header - show folder/department name and action buttons
-                const currentDepartment = departments.find((d) => d.id === selectedDepartmentId);
-                const folderName = activeEntry?.name ?? currentDepartment?.name ?? "";
+                // Folder view header - action buttons only
                 onHeaderContentChange(
                     <EmbeddedFolderHeader
-                        folderName={folderName}
                         showEditButton={!!activeEntry && !activeEntry.frame_id}
                         onEditFolder={() => {
                             if (!activeEntry) return;
