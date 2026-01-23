@@ -1,11 +1,10 @@
 "use client";
 
 import type { FC, MouseEventHandler } from "react";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Pressable } from "react-aria-components";
 import { FileCode01, Folder } from "@untitledui/icons";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { cx } from "@/utils/cx";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
 import { supabaseFetch } from "@/utils/supabase/rest";
@@ -55,7 +54,6 @@ export const NavItemButton = ({
     onClick,
     departmentId,
 }: NavItemButtonProps) => {
-    const searchParams = useSearchParams();
     const [isHovered, setIsHovered] = useState(false);
     const [children, setChildren] = useState<DirectoryEntry[]>([]);
     const [frames, setFrames] = useState<Frame[]>([]);
@@ -63,15 +61,6 @@ export const NavItemButton = ({
     const buttonRef = useRef<HTMLAnchorElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-    // Helper to append search params to any path
-    const appendQuery = useMemo(() => {
-        const queryString = searchParams.toString();
-        return (path: string) => queryString ? `${path}?${queryString}` : path;
-    }, [searchParams]);
-
-    // Compute href with search params
-    const hrefWithParams = useMemo(() => href ? appendQuery(href) : href, [href, appendQuery]);
 
     useEffect(() => {
         if (!isHovered || !departmentId) {
@@ -206,7 +195,7 @@ export const NavItemButton = ({
             <Pressable>
                 <a
                     ref={buttonRef}
-                    href={hrefWithParams}
+                    href={href}
                     aria-label={label}
                     onClick={onClick}
                     className={cx(
@@ -245,7 +234,7 @@ export const NavItemButton = ({
                     {topLevelPages.length > 0 && (
                         <>
                             {topLevelPages.map((page) => {
-                                const pageHref = appendQuery(`/${page.department_id}/${page.slug}`);
+                                const pageHref = `/${page.department_id}/${page.slug}`;
                                 return (
                                     <Link
                                         key={page.id}
@@ -274,7 +263,7 @@ export const NavItemButton = ({
                     
                     {/* Folders with their child pages nested underneath */}
                     {topLevelFolders.map((folder) => {
-                        const folderHref = appendQuery(`/${folder.department_id}/${folder.slug}`);
+                        const folderHref = `/${folder.department_id}/${folder.slug}`;
                         const folderPages = pagesByParent.get(folder.id) || [];
 
                         return (
@@ -302,7 +291,7 @@ export const NavItemButton = ({
                                 {folderPages.length > 0 && (
                                     <div className="ml-6 pl-1">
                                         {folderPages.map((page) => {
-                                            const pageHref = appendQuery(`/${page.department_id}/${page.slug}`);
+                                            const pageHref = `/${page.department_id}/${page.slug}`;
                                             return (
                                                 <Link
                                                     key={page.id}

@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { FileCode01 } from "@untitledui/icons";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
 
@@ -12,10 +9,7 @@ type PageCardProps = {
 };
 
 export const PageCard = ({ entry, path, frame }: PageCardProps) => {
-    const searchParams = useSearchParams();
-    const basePath = `/${entry.department_id}/${path.join("/")}`;
-    const queryString = searchParams.toString();
-    const href = queryString ? `${basePath}?${queryString}` : basePath;
+    const href = `/${entry.department_id}/${path.join("/")}`;
 
     return (
         <Link

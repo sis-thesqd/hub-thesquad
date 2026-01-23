@@ -1,8 +1,6 @@
 "use client";
 
 import type { FC, HTMLAttributes, MouseEventHandler, ReactNode } from "react";
-import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
 import { ChevronDown, Share04 } from "@untitledui/icons";
 import { Link as AriaLink } from "react-aria-components";
 import { Badge } from "@/components/base/badges/badges";
@@ -37,15 +35,6 @@ interface NavItemBaseProps {
 }
 
 export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, truncate = true, onClick }: NavItemBaseProps) => {
-    const searchParams = useSearchParams();
-
-    // Compute href with search params preserved (only for internal links)
-    const hrefWithParams = useMemo(() => {
-        if (!href || href.startsWith("http")) return href;
-        const queryString = searchParams.toString();
-        return queryString ? `${href}?${queryString}` : href;
-    }, [href, searchParams]);
-
     const iconElement = Icon && <Icon aria-hidden="true" className="mr-2 size-5 shrink-0 text-fg-quaternary transition-inherit-all" />;
 
     const badgeElement =
@@ -89,7 +78,7 @@ export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, 
     if (type === "collapsible-child") {
         return (
             <AriaLink
-                href={hrefWithParams!}
+                href={href!}
                 target={isExternal ? "_blank" : "_self"}
                 rel="noopener noreferrer"
                 className={cx("py-2 pr-3 pl-10", styles.root, current && styles.rootSelected)}
@@ -105,7 +94,7 @@ export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, 
 
     return (
         <AriaLink
-            href={hrefWithParams!}
+            href={href!}
             target={isExternal ? "_blank" : "_self"}
             rel="noopener noreferrer"
             className={cx("px-3 py-2", styles.root, current && styles.rootSelected)}

@@ -1,51 +1,14 @@
 "use client";
 
-import type { FC } from "react";
 import { useMemo } from "react";
-import { File06, Folder, FolderClosed, Grid01 } from "@untitledui/icons";
+import { File06, Folder, Grid01 } from "@untitledui/icons";
 import type { Selection } from "react-aria-components";
 import { Heading as AriaHeading } from "react-aria-components";
 import { useHotkeys } from "react-hotkeys-hook";
 import type { CommandDropdownMenuItemProps } from "@/components/application/command-menus/base-components/command-menu-item";
 import { CommandMenu } from "@/components/application/command-menus/command-menu";
 import { EmptyState } from "@/components/application/empty-state/empty-state";
-import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
-import { getIconByName } from "@/utils/icon-map";
-
-// Helper to create an emoji icon component
-const createEmojiIcon = (emoji: string): FC<{ className?: string }> => {
-    const EmojiIcon: FC<{ className?: string }> = ({ className }) => (
-        <span className={className} style={{ fontSize: "1.25rem", lineHeight: 1 }}>{emoji}</span>
-    );
-    EmojiIcon.displayName = `EmojiIcon(${emoji})`;
-    return EmojiIcon;
-};
-
-// Helper to build the full path for an entry
-const buildEntryPath = (entry: DirectoryEntry, entries: DirectoryEntry[], departments: RipplingDepartment[]): string => {
-    const pathParts: string[] = [];
-    let currentEntry: DirectoryEntry | undefined = entry;
-
-    // Build path from entry to root (excluding the entry itself)
-    let currentParentId = currentEntry.parent_id;
-    while (currentParentId) {
-        const parent = entries.find((e) => e.id === currentParentId);
-        if (parent) {
-            pathParts.unshift(parent.emoji ? `${parent.emoji} ${parent.name}` : parent.name);
-            currentParentId = parent.parent_id;
-        } else {
-            break;
-        }
-    }
-
-    // Add department name at the start
-    const dept = departments.find((d) => d.id === entry.department_id);
-    if (dept?.name) {
-        pathParts.unshift(dept.name);
-    }
-
-    return pathParts.join(" / ") || "Root";
-};
+import type { DirectoryEntry, Frame, RipplingDepartment } from "@/utils/supabase/types";
 
 type DirectoryCommandMenuProps = {
     isOpen: boolean;
@@ -53,7 +16,6 @@ type DirectoryCommandMenuProps = {
     departments: RipplingDepartment[];
     entries: DirectoryEntry[];
     frames: Frame[];
-    navigationPages: NavigationPage[];
     onSelect: (type: "department" | "folder" | "page", id: string) => void;
 };
 
@@ -63,7 +25,6 @@ export const DirectoryCommandMenu = ({
     departments,
     entries,
     frames,
-    navigationPages,
     onSelect,
 }: DirectoryCommandMenuProps) => {
     // Listen for Cmd+K
@@ -73,59 +34,44 @@ export const DirectoryCommandMenu = ({
     }, { enableOnFormTags: true });
 
     const groups = useMemo(() => {
-        // Departments group - use icons from navigationPages
-        const departmentItems: CommandDropdownMenuItemProps[] = departments.map((dept) => {
-            // Find matching navigation page by comparing slugified name
-            const deptSlug = dept.name
-                ?.toLowerCase()
-                .trim()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/(^-|-$)+/g, "");
-            const navPage = navigationPages.find((page) => page.slug === deptSlug);
-            const icon = navPage ? getIconByName(navPage.icon, FolderClosed) : Grid01;
-
-            return {
-                id: `dept-${dept.id}`,
-                type: "icon" as const,
-                label: dept.name ?? dept.id,
-                icon,
-                size: "sm" as const,
-                description: "Department",
-                stacked: true,
-            };
-        });
+        // Departments group
+        const departmentItems: CommandDropdownMenuItemProps[] = departments.map((dept) => ({
+            id: `dept-${dept.id}`,
+            type: "icon" as const,
+            label: dept.name ?? dept.id,
+            icon: Grid01,
+            size: "sm" as const,
+            description: "Department",
+            stacked: true,
+        }));
 
         // Folders group (entries without frame_id)
         const folders = entries.filter((entry) => !entry.frame_id);
         const folderItems: CommandDropdownMenuItemProps[] = folders.map((folder) => {
-            const path = buildEntryPath(folder, entries, departments);
-            // Use emoji as icon if available, otherwise use Folder icon
-            const icon = folder.emoji ? createEmojiIcon(folder.emoji) : Folder;
+            const dept = departments.find((d) => d.id === folder.department_id);
             return {
                 id: `folder-${folder.id}`,
                 type: "icon" as const,
-                label: folder.name, // Don't include emoji in label since it's shown as icon
-                icon,
+                label: folder.emoji ? `${folder.emoji} ${folder.name}` : folder.name,
+                icon: Folder,
                 size: "sm" as const,
-                description: path,
+                description: dept?.name ?? "Folder",
                 stacked: true,
             };
         });
 
         // Pages group (frames)
         const pageItems: CommandDropdownMenuItemProps[] = frames.map((frame) => {
-            // Find the entry for this frame to get its emoji and path
+            // Find the entry for this frame to get its emoji
             const entry = entries.find((e) => e.frame_id === frame.id);
-            const path = entry ? buildEntryPath(entry, entries, departments) : "Page";
-            // Use emoji as icon if available, otherwise use File06 icon
-            const icon = entry?.emoji ? createEmojiIcon(entry.emoji) : File06;
+            const dept = departments.find((d) => frame.department_ids.includes(d.id));
             return {
                 id: `page-${frame.id}`,
                 type: "icon" as const,
-                label: frame.name, // Don't include emoji in label since it's shown as icon
-                icon,
+                label: entry?.emoji ? `${entry.emoji} ${frame.name}` : frame.name,
+                icon: File06,
                 size: "sm" as const,
-                description: path,
+                description: frame.description || dept?.name || "Page",
                 stacked: true,
             };
         });
@@ -135,7 +81,7 @@ export const DirectoryCommandMenu = ({
             { id: "folders", title: "Folders", items: folderItems },
             { id: "pages", title: "Pages", items: pageItems },
         ].filter((group) => group.items.length > 0);
-    }, [departments, entries, frames, navigationPages]);
+    }, [departments, entries, frames]);
 
     const handleSelectionChange = (selection: Selection) => {
         if (selection === "all") return;

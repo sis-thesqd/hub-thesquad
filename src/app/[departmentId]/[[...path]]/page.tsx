@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, use } from "react";
+import { use } from "react";
 import { Dashboard17 } from "@/app/dashboards-17";
 
 interface PageProps {
@@ -12,9 +12,5 @@ interface PageProps {
 
 export default function DepartmentDirectoryPage({ params }: PageProps) {
     const resolvedParams = use(params);
-    return (
-        <Suspense>
-            <Dashboard17 initialDepartmentId={resolvedParams.departmentId} initialPath={resolvedParams.path ?? []} />
-        </Suspense>
-    );
+    return <Dashboard17 initialDepartmentId={resolvedParams.departmentId} initialPath={resolvedParams.path ?? []} />;
 }

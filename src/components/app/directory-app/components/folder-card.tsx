@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Folder } from "@untitledui/icons";
 import type { DirectoryEntry } from "@/utils/supabase/types";
 
@@ -12,10 +9,7 @@ type FolderCardProps = {
 };
 
 export const FolderCard = ({ entry, path, childCount }: FolderCardProps) => {
-    const searchParams = useSearchParams();
-    const basePath = `/${entry.department_id}/${path.join("/")}`;
-    const queryString = searchParams.toString();
-    const href = queryString ? `${basePath}?${queryString}` : basePath;
+    const href = `/${entry.department_id}/${path.join("/")}`;
 
     return (
         <Link
