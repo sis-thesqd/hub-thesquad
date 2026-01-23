@@ -2,7 +2,7 @@
 
 import type { FC } from "react";
 import { useState, useCallback, useEffect } from "react";
-import { ChevronLeft, ChevronRight, LogOut01, SearchLg, Star01 } from "@untitledui/icons";
+import { LogOut01, SearchLg, Star01 } from "@untitledui/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button as AriaButton, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
@@ -23,6 +23,7 @@ import { NavList } from "../base-components/nav-list";
 import type { NavItemType } from "../config";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
+const SIDEBAR_DEFAULT_EXPANDED_KEY = "sidebar-default-expanded";
 
 const getInitials = (firstName?: string | null, lastName?: string | null): string => {
     const first = firstName?.charAt(0)?.toUpperCase() || "";
@@ -55,21 +56,22 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
     const [currentItem, setCurrentItem] = useState(activeItem || fallbackItem);
     const [isHovering, setIsHovering] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(true);
+    const [hasMounted, setHasMounted] = useState(false);
 
-    // Load collapsed state from localStorage on mount
+    // Load collapsed state from localStorage on mount (respecting user's default preference)
     useEffect(() => {
+        // First check if there's an explicit collapsed state saved
         const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
         if (stored !== null) {
             setIsCollapsed(stored === "true");
+        } else {
+            // Otherwise use the default preference (defaults to expanded/open)
+            const defaultExpanded = localStorage.getItem(SIDEBAR_DEFAULT_EXPANDED_KEY);
+            // If default is "true" (open), collapsed should be false; if null/undefined, default to open
+            setIsCollapsed(defaultExpanded === "false");
         }
-    }, []);
-
-    const toggleCollapsed = useCallback(() => {
-        setIsCollapsed((prev) => {
-            const newValue = !prev;
-            localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(newValue));
-            return newValue;
-        });
+        // Mark as mounted after reading state to prevent animation on initial render
+        setHasMounted(true);
     }, []);
 
     const displayName = worker?.display_name || worker?.given_name || "User";
@@ -104,7 +106,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
         <motion.aside
             initial={false}
             animate={{ width: MAIN_SIDEBAR_WIDTH }}
-            transition={{ type: "spring", damping: 26, stiffness: 220, bounce: 0 }}
+            transition={hasMounted ? { type: "spring", damping: 26, stiffness: 220, bounce: 0 } : { duration: 0 }}
             className={cx(
                 "group flex h-full max-h-full overflow-y-auto overflow-x-hidden py-1 pl-1",
                 isSecondarySidebarVisible && "bg-primary",
@@ -173,7 +175,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
 
                                 if (isCollapsed) {
                                     return (
-                                        <li key={item.label}>
+                                        <li key={item.label} title={item.label}>
                                             <AriaLink
                                                 href={hrefWithParams!}
                                                 className={cx(
@@ -181,7 +183,6 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                                                     isCurrent && "bg-active"
                                                 )}
                                                 onClick={() => setCurrentItem(item)}
-                                                title={item.label}
                                             >
                                                 <Icon className={cx("size-5", isCurrent ? "text-fg-secondary" : "text-fg-quaternary")} />
                                             </AriaLink>
@@ -208,7 +209,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                         </ul>
                     )}
 
-                    <div onMouseEnter={handleFavoritesHover}>
+                    <div onMouseEnter={handleFavoritesHover} title={isCollapsed ? "Favorites" : undefined}>
                         {isCollapsed ? (
                             <AriaLink
                                 href={appendUrlParams("/favorites")}
@@ -216,7 +217,6 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                                     "flex size-8 items-center justify-center rounded-md transition hover:bg-primary_hover",
                                     activeUrl === "/favorites" && "bg-active"
                                 )}
-                                title="Favorites"
                             >
                                 <Star01 className={cx("size-5", activeUrl === "/favorites" ? "text-fg-secondary" : "text-fg-quaternary")} />
                             </AriaLink>
@@ -292,19 +292,6 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                                 <NavAccountMenu />
                             </AriaPopover>
                         </AriaDialogTrigger>
-
-                        <button
-                            type="button"
-                            onClick={toggleCollapsed}
-                            className={cx(
-                                "flex items-center rounded-md text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary",
-                                isCollapsed ? "size-8 justify-center" : "gap-2 px-1 py-1.5 w-full"
-                            )}
-                            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                        >
-                            {isCollapsed ? <ChevronRight className="size-5" /> : <ChevronLeft className="size-5 shrink-0" />}
-                            {!isCollapsed && <span className="text-sm font-medium">Collapse</span>}
-                        </button>
                     </div>
                 </div>
             </div>
@@ -366,7 +353,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
             <motion.div
                 initial={false}
                 animate={{ paddingLeft: MAIN_SIDEBAR_WIDTH }}
-                transition={{ type: "spring", damping: 26, stiffness: 220, bounce: 0 }}
+                transition={hasMounted ? { type: "spring", damping: 26, stiffness: 220, bounce: 0 } : { duration: 0 }}
                 className="invisible hidden lg:sticky lg:top-0 lg:bottom-0 lg:left-0 lg:block"
             />
 

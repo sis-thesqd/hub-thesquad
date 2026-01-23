@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Monitor01, Moon01, Sun, Save01, FolderClosed } from "@untitledui/icons";
+import { Monitor01, Moon01, Sun, Save01, FolderClosed, LayoutLeft, LayoutRight } from "@untitledui/icons";
 import * as AllIcons from "@untitledui/icons";
 import { useTheme } from "next-themes";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,11 +16,56 @@ import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
 import type { SelectItemType } from "@/components/base/select/select";
+import * as RadioGroups from "@/components/base/radio-groups/radio-groups";
 import type { NavigationPage } from "@/utils/supabase/types";
 import { cx } from "@/utils/cx";
 import { getIconByName } from "@/utils/icon-map";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { updateNavigationPages } from "./actions";
+
+const SIDEBAR_DEFAULT_EXPANDED_KEY = "sidebar-default-expanded";
+const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
+
+const themeItems = [
+    {
+        value: "system",
+        title: "System",
+        secondaryTitle: "",
+        description: "Use your device's settings.",
+        icon: Monitor01,
+    },
+    {
+        value: "light",
+        title: "Light",
+        secondaryTitle: "",
+        description: "Always light mode.",
+        icon: Sun,
+    },
+    {
+        value: "dark",
+        title: "Dark",
+        secondaryTitle: "",
+        description: "Always dark mode.",
+        icon: Moon01,
+    },
+];
+
+const sidebarItems = [
+    {
+        value: "expanded",
+        title: "Expanded",
+        secondaryTitle: "",
+        description: "Always show labels.",
+        icon: LayoutLeft,
+    },
+    {
+        value: "collapsed",
+        title: "Collapsed",
+        secondaryTitle: "",
+        description: "Always show only icons.",
+        icon: LayoutRight,
+    },
+];
 
 // Get all icon names from @untitledui/icons (computed once at module level)
 const ALL_ICON_NAMES = Object.keys(AllIcons).filter(
@@ -49,6 +94,24 @@ export const SettingsPage = () => {
     const [hasChanges, setHasChanges] = useState(false);
     const [commandMenuOpen, setCommandMenuOpen] = useState(false);
     const [selectedTab, setSelectedTab] = useState<string>("app-settings");
+    const [sidebarDefaultExpanded, setSidebarDefaultExpanded] = useState<boolean>(true);
+
+    // Load sidebar default preference from localStorage
+    useEffect(() => {
+        const stored = localStorage.getItem(SIDEBAR_DEFAULT_EXPANDED_KEY);
+        // Default to expanded (true) if not set
+        setSidebarDefaultExpanded(stored !== "false");
+    }, []);
+
+    const handleSidebarDefaultChange = useCallback((value: string) => {
+        const expanded = value === "expanded";
+        setSidebarDefaultExpanded(expanded);
+        localStorage.setItem(SIDEBAR_DEFAULT_EXPANDED_KEY, String(expanded));
+        // Also update the current collapsed state to match the new default
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(!expanded));
+        // Reload to apply the change immediately
+        window.location.reload();
+    }, []);
 
     // Check if user is admin (Systems Integration Squad or title contains "Systems")
     const isAdmin = worker?.department_id === SIS_DEPARTMENT_ID ||
@@ -228,33 +291,39 @@ export const SettingsPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-5">
-                                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(200px,280px)_minmax(480px,512px)] lg:gap-16">
+                                <div className="flex flex-col gap-8">
+                                    {/* Theme Setting */}
+                                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(200px,280px)_1fr] lg:gap-16">
                                         <div className="flex flex-col gap-1">
                                             <p className="text-sm font-medium text-primary">Theme</p>
                                             <p className="text-sm text-tertiary">Select your preferred theme.</p>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-3">
-                                            <ThemeOption
-                                                icon={Monitor01}
-                                                label="System"
-                                                isSelected={theme === "system"}
-                                                onClick={() => setTheme("system")}
-                                            />
-                                            <ThemeOption
-                                                icon={Sun}
-                                                label="Light"
-                                                isSelected={theme === "light"}
-                                                onClick={() => setTheme("light")}
-                                            />
-                                            <ThemeOption
-                                                icon={Moon01}
-                                                label="Dark"
-                                                isSelected={theme === "dark"}
-                                                onClick={() => setTheme("dark")}
-                                            />
+                                        <RadioGroups.RadioButton
+                                            aria-label="Theme"
+                                            orientation="horizontal"
+                                            value={theme}
+                                            onChange={(value) => setTheme(value)}
+                                            items={themeItems}
+                                            className="flex-nowrap overflow-x-auto"
+                                        />
+                                    </div>
+
+                                    {/* Sidebar Setting */}
+                                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(200px,280px)_1fr] lg:gap-16">
+                                        <div className="flex flex-col gap-1">
+                                            <p className="text-sm font-medium text-primary">Sidebar</p>
+                                            <p className="text-sm text-tertiary">Choose the default sidebar state.</p>
                                         </div>
+
+                                        <RadioGroups.RadioButton
+                                            aria-label="Sidebar default state"
+                                            orientation="horizontal"
+                                            value={sidebarDefaultExpanded ? "expanded" : "collapsed"}
+                                            onChange={handleSidebarDefaultChange}
+                                            items={sidebarItems}
+                                            className="flex-nowrap overflow-x-auto"
+                                        />
                                     </div>
                                 </div>
                             </>
@@ -360,26 +429,3 @@ export const SettingsPage = () => {
     );
 };
 
-interface ThemeOptionProps {
-    icon: React.FC<{ className?: string }>;
-    label: string;
-    isSelected: boolean;
-    onClick: () => void;
-}
-
-const ThemeOption = ({ icon: Icon, label, isSelected, onClick }: ThemeOptionProps) => {
-    return (
-        <button
-            onClick={onClick}
-            className={cx(
-                "flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",
-                isSelected
-                    ? "bg-brand-secondary text-brand-secondary ring-2 ring-brand"
-                    : "bg-secondary text-secondary hover:bg-secondary_hover"
-            )}
-        >
-            <Icon className="size-5" />
-            {label}
-        </button>
-    );
-};
