@@ -12,6 +12,8 @@ import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
 import {
     createFolder as createFolderAction,
     updateFolder as updateFolderAction,
+    deleteEntry as deleteEntryAction,
+    deletePage as deletePageAction,
     createFrame,
     updateFrame,
     createDirectoryEntries,
@@ -609,6 +611,60 @@ export const DirectoryApp = ({
         invalidateEntriesAndFrames();
     };
 
+    const handleDeleteFolder = async (entry: DirectoryEntry) => {
+        if (!window.confirm(`Are you sure you want to delete "${entry.name}"? This will also delete all contents inside.`)) {
+            return;
+        }
+
+        const result = await deleteEntryAction(entry.id);
+        if (!result.success) {
+            setError(result.error ?? "Failed to delete folder");
+            return;
+        }
+
+        setEditFolderOpen(false);
+        invalidateEntriesAndFrames();
+        // Navigate back to parent or department root
+        if (entry.parent_id) {
+            const parent = entriesById.get(entry.parent_id);
+            if (parent) {
+                const parentPath = pathById.get(parent.id) ?? [parent.slug];
+                router.push(appendUrlParams(`/${entry.department_id}/${parentPath.join("/")}`));
+            } else {
+                router.push(appendUrlParams(`/${entry.department_id}`));
+            }
+        } else {
+            router.push(appendUrlParams(`/${entry.department_id}`));
+        }
+    };
+
+    const handleDeletePage = async (frame: Frame) => {
+        if (!window.confirm(`Are you sure you want to delete "${frame.name}"? This cannot be undone.`)) {
+            return;
+        }
+
+        const result = await deletePageAction(frame.id);
+        if (!result.success) {
+            setError(result.error ?? "Failed to delete page");
+            return;
+        }
+
+        setEditPageOpen(false);
+        invalidateEntriesAndFrames();
+        // Navigate back to parent folder or department root
+        if (activeEntry?.parent_id) {
+            const parent = entriesById.get(activeEntry.parent_id);
+            if (parent) {
+                const parentPath = pathById.get(parent.id) ?? [parent.slug];
+                router.push(appendUrlParams(`/${activeEntry.department_id}/${parentPath.join("/")}`));
+            } else {
+                router.push(appendUrlParams(`/${activeEntry.department_id}`));
+            }
+        } else if (activeEntry) {
+            router.push(appendUrlParams(`/${activeEntry.department_id}`));
+        }
+    };
+
     const handleFolderSelected = useCallback((key: string | number) => {
         if (key === "__create_new__") {
             pagePlacements.remove("__create_new__");
@@ -794,6 +850,7 @@ export const DirectoryApp = ({
                 form={folderForm}
                 onFormChange={setFolderForm}
                 onSubmit={() => activeEntry && handleUpdateFolder(activeEntry)}
+                onDelete={() => activeEntry && handleDeleteFolder(activeEntry)}
             />
 
             <EditPageModal
@@ -807,6 +864,7 @@ export const DirectoryApp = ({
                 pagePlacements={pagePlacements}
                 onFolderSelected={handleFolderSelected}
                 onSubmit={() => activeFrame && handleUpdatePage(activeFrame, pagePlacements.items.map((item) => item.id))}
+                onDelete={() => activeFrame && handleDeletePage(activeFrame)}
             />
 
             <InlineFolderModal

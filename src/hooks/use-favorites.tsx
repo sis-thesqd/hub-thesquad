@@ -2,8 +2,11 @@
 
 import { useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Star01 } from "@untitledui/icons";
+import { toast } from "sonner";
 import type { ShFavorite } from "@/utils/supabase/types";
 import { toggleFavorite as toggleFavoriteAction } from "@/app/api/directory/actions";
+import { IconNotification } from "@/components/application/notifications/notifications";
 
 interface UseFavoritesOptions {
     userId: string | undefined;
@@ -65,6 +68,8 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
                 entryId ? f.entry_id === entryId : f.department_id === departmentId
             );
 
+            const isAdding = !existing;
+
             // Optimistically update UI
             if (existing) {
                 queryClient.setQueryData<ShFavorite[]>(
@@ -85,6 +90,17 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
                     (old) => [optimisticFavorite, ...(old ?? [])]
                 );
             }
+
+            // Show toast notification
+            toast.custom((t) => (
+                <IconNotification
+                    title={isAdding ? "Added to favorites" : "Removed from favorites"}
+                    description={isAdding ? "You can find this in your favorites list." : "This item has been removed from your favorites."}
+                    color="default"
+                    icon={Star01}
+                    onClose={() => toast.dismiss(t)}
+                />
+            ));
 
             // Call server action
             const result = await toggleFavoriteAction(userId, entryId, departmentId);

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type React from "react";
 import { useRouter } from "next/navigation";
-import { FolderClosed, Plus } from "@untitledui/icons";
+import { ArrowLeft, FolderClosed, Plus } from "@untitledui/icons";
 import { useListData } from "react-stately";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 import { DirectoryApp } from "@/components/app/directory-app";
@@ -366,7 +366,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
 
             <main className="min-w-0 flex-1 overflow-hidden lg:pt-2 lg:pl-1">
                 <div className={`flex h-full flex-col overflow-hidden border-secondary lg:rounded-tl-[24px] lg:border-t lg:border-l ${isHomePage || isFavoritesPage ? "gap-8 pt-8 pb-12" : "gap-3 pt-4"}`}>
-                    <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:items-center lg:px-8">
+                    <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:items-center">
                         {isHomePage && hasLoadedName ? (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">
                                 <AnimatedGroup staggerDelay={0.09} distance={4}>
@@ -378,7 +378,17 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                         ) : isFavoritesPage ? (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">Favorites</p>
                         ) : (
-                            <div className="ml-auto">{headerContent}</div>
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => router.back()}
+                                    className="flex size-8 items-center justify-center rounded-md text-fg-quaternary transition hover:bg-secondary hover:text-fg-secondary"
+                                    title="Go back"
+                                >
+                                    <ArrowLeft className="size-5" />
+                                </button>
+                                <div className="ml-auto">{headerContent}</div>
+                            </>
                         )}
                         {!isFavoritesPage && isHomePage && departments.length > 0 && (
                             <div className="flex gap-2">

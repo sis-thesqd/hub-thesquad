@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import EmojiPicker, { Theme, type EmojiClickData } from "emoji-picker-react";
-import { FaceSmile } from "@untitledui/icons";
+import { FaceSmile, X } from "@untitledui/icons";
 
 type EmojiPickerFieldProps = {
     value: string;
@@ -11,7 +11,7 @@ type EmojiPickerFieldProps = {
     isRequired?: boolean;
 };
 
-export const EmojiPickerField = ({ value, onChange, label = "Icon", isRequired }: EmojiPickerFieldProps) => {
+export const EmojiPickerField = ({ value, onChange, label, isRequired }: EmojiPickerFieldProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const pickerRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
@@ -49,34 +49,33 @@ export const EmojiPickerField = ({ value, onChange, label = "Icon", isRequired }
 
     return (
         <div className="relative">
-            <label className="mb-1.5 block text-sm font-medium text-secondary">
-                {label}
-                {isRequired && <span className="text-fg-error_primary"> *</span>}
-            </label>
-            <div className="flex items-center gap-2">
+            {label && (
+                <label className="mb-1.5 block text-sm font-medium text-secondary">
+                    {label}
+                    {isRequired && <span className="text-fg-error_primary"> *</span>}
+                </label>
+            )}
+            <div className="relative inline-block">
                 <button
                     ref={buttonRef}
                     type="button"
                     onClick={() => setIsOpen(!isOpen)}
-                    className="flex size-12 items-center justify-center rounded-lg border border-secondary_alt bg-primary text-2xl transition hover:bg-primary_hover"
+                    className="flex h-[42px] w-11 cursor-pointer items-center justify-center rounded-lg border border-secondary_alt bg-primary text-xl transition hover:bg-primary_hover"
                 >
                     {value ? (
                         <span>{value}</span>
                     ) : (
-                        <FaceSmile className="size-6 text-fg-quaternary" />
+                        <FaceSmile className="size-5 text-fg-quaternary" />
                     )}
                 </button>
                 {value && (
                     <button
                         type="button"
                         onClick={handleClear}
-                        className="text-sm text-tertiary transition hover:text-secondary"
+                        className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-tertiary text-fg-white transition hover:bg-quaternary"
                     >
-                        Remove
+                        <X className="size-2.5" />
                     </button>
-                )}
-                {!value && (
-                    <span className="text-sm text-quaternary">Click to select an icon</span>
                 )}
             </div>
             {isOpen && (

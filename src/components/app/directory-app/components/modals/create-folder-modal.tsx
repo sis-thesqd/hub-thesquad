@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { X } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
@@ -79,23 +80,34 @@ export const CreateFolderModal = ({
                 <Modal className="max-w-xl">
                     <Dialog className="w-full">
                         <div className="w-full rounded-2xl bg-primary p-6 shadow-xl ring-1 ring-secondary_alt">
-                            <div className="mb-4">
+                            <div className="mb-4 flex items-center justify-between">
                                 <p className="text-lg font-semibold text-primary">Create folder</p>
+                                <button
+                                    type="button"
+                                    onClick={() => onOpenChange(false)}
+                                    className="flex size-8 items-center justify-center rounded-md text-fg-quaternary transition hover:bg-secondary hover:text-fg-secondary"
+                                >
+                                    <X className="size-5" />
+                                </button>
                             </div>
 
                             <div className="grid gap-4">
-                                <EmojiPickerField
-                                    value={form.emoji}
-                                    onChange={(emoji) => onFormChange({ ...form, emoji })}
-                                    isRequired
-                                />
-                                <Input
-                                    label="Folder name"
-                                    value={form.name}
-                                    onChange={handleNameChange}
-                                    placeholder="e.g. Reporting"
-                                    isRequired
-                                />
+                                <div className="flex items-end gap-3">
+                                    <EmojiPickerField
+                                        value={form.emoji}
+                                        onChange={(emoji) => onFormChange({ ...form, emoji })}
+                                        isRequired
+                                    />
+                                    <div className="flex-1">
+                                        <Input
+                                            label="Folder name"
+                                            value={form.name}
+                                            onChange={handleNameChange}
+                                            placeholder="e.g. Reporting"
+                                            isRequired
+                                        />
+                                    </div>
+                                </div>
                                 <Input
                                     label="Slug"
                                     value={form.slug}
@@ -122,10 +134,7 @@ export const CreateFolderModal = ({
                                 </Select.ComboBox>
                             </div>
 
-                            <div className="mt-6 flex justify-end gap-2">
-                                <Button color="secondary" onClick={() => onOpenChange(false)}>
-                                    Cancel
-                                </Button>
+                            <div className="mt-6 flex justify-end">
                                 <Button onClick={onSubmit} isDisabled={!isFormValid}>Create folder</Button>
                             </div>
                         </div>

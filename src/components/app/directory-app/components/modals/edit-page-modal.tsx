@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import type { FC } from "react";
+import { Trash01, X } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
@@ -34,6 +35,7 @@ type EditPageModalProps = {
     pagePlacements: ReturnType<typeof useListData<SelectItemType>>;
     onFolderSelected: (key: string | number) => void;
     onSubmit: () => void;
+    onDelete?: () => void;
 };
 
 export const EditPageModal = ({
@@ -47,6 +49,7 @@ export const EditPageModal = ({
     pagePlacements,
     onFolderSelected,
     onSubmit,
+    onDelete,
 }: EditPageModalProps) => {
     // For edit mode, slug starts as manually edited (pre-populated with existing value)
     const [slugManuallyEdited, setSlugManuallyEdited] = useState(true);
@@ -95,21 +98,32 @@ export const EditPageModal = ({
                 <Modal className="max-w-xl">
                     <Dialog className="w-full">
                         <div className="w-full rounded-2xl bg-primary p-6 shadow-xl ring-1 ring-secondary_alt">
-                            <div className="mb-4">
+                            <div className="mb-4 flex items-center justify-between">
                                 <p className="text-lg font-semibold text-primary">Edit page</p>
+                                <button
+                                    type="button"
+                                    onClick={() => onOpenChange(false)}
+                                    className="flex size-8 items-center justify-center rounded-md text-fg-quaternary transition hover:bg-secondary hover:text-fg-secondary"
+                                >
+                                    <X className="size-5" />
+                                </button>
                             </div>
                             <div className="grid gap-4">
-                                <EmojiPickerField
-                                    value={form.emoji}
-                                    onChange={(emoji) => onFormChange({ ...form, emoji })}
-                                    isRequired
-                                />
-                                <Input
-                                    label="Page name"
-                                    value={form.name}
-                                    onChange={handleNameChange}
-                                    isRequired
-                                />
+                                <div className="flex items-end gap-3">
+                                    <EmojiPickerField
+                                        value={form.emoji}
+                                        onChange={(emoji) => onFormChange({ ...form, emoji })}
+                                        isRequired
+                                    />
+                                    <div className="flex-1">
+                                        <Input
+                                            label="Page name"
+                                            value={form.name}
+                                            onChange={handleNameChange}
+                                            isRequired
+                                        />
+                                    </div>
+                                </div>
                                 <Input
                                     label="Slug"
                                     value={form.slug}
@@ -117,7 +131,7 @@ export const EditPageModal = ({
                                     isRequired
                                 />
                                 <Input
-                                    label="Iframe URL"
+                                    label="Public app link"
                                     value={form.iframeUrl}
                                     onChange={(value) => onFormChange({ ...form, iframeUrl: value })}
                                     isRequired
@@ -151,11 +165,15 @@ export const EditPageModal = ({
                                 </MultiSelect>
                             </div>
 
-                            <div className="mt-6 flex justify-end gap-2">
-                                <Button color="secondary" onClick={() => onOpenChange(false)}>
-                                    Cancel
-                                </Button>
-                                <Button onClick={onSubmit} isDisabled={!isFormValid}>Save changes</Button>
+                            <div className="mt-6 flex justify-between">
+                                {onDelete && (
+                                    <Button color="primary-destructive" iconLeading={Trash01} onClick={onDelete}>
+                                        Delete page
+                                    </Button>
+                                )}
+                                <div className="ml-auto">
+                                    <Button onClick={onSubmit} isDisabled={!isFormValid}>Save changes</Button>
+                                </div>
                             </div>
                         </div>
                     </Dialog>

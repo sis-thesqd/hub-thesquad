@@ -367,7 +367,6 @@ export const MultiSelectTagsValue = ({
     shortcut,
     placeholder,
     shortcutClassName,
-    placeholderIcon: Icon = SearchLg,
     // Omit this prop to avoid invalid HTML attribute warning
     isDisabled: _isDisabled,
     ...otherProps
@@ -386,7 +385,6 @@ export const MultiSelectTagsValue = ({
         >
             {({ isDisabled }) => (
                 <>
-                    {Icon && <Icon className="pointer-events-none size-5 text-fg-quaternary" />}
                     <FocusScope contain={false} autoFocus={false} restoreFocus={false}>
                         <InnerMultiSelect
                             isDisabled={isDisabled}
