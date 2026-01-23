@@ -10,7 +10,7 @@ import { DirectoryApp } from "@/components/app/directory-app";
 import { DirectoryCommandMenu } from "@/components/app/directory-app/components/directory-command-menu";
 import { CreateFolderModal, CreatePageModal } from "@/components/app/directory-app/components/modals";
 import { emptyForm, getRandomEmoji } from "@/components/app/directory-app/constants";
-import type { FormState } from "@/components/app/directory-app/types";
+import type { FormState, ActiveEntryInfo } from "@/components/app/directory-app/types";
 import type { Frame } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 import { createFolder, createPage } from "@/app/api/directory/actions";
@@ -43,6 +43,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
 
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
     const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
+    const [activeEntryInfo, setActiveEntryInfo] = useState<ActiveEntryInfo>(null);
     const [commandMenuOpen, setCommandMenuOpen] = useState(false);
 
     // Favorites hook
@@ -387,6 +388,16 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                                 >
                                     <ArrowLeft className="size-5" />
                                 </button>
+                                {activeEntryInfo && !activeEntryInfo.isPage && (
+                                    <p className="flex items-center text-lg font-semibold text-primary">
+                                        {activeEntryInfo.emoji && <span className="mr-2">{activeEntryInfo.emoji}</span>}
+                                        {activeEntryInfo.icon && (() => {
+                                            const Icon = getIconByName(activeEntryInfo.icon, FolderClosed);
+                                            return <Icon className="mr-2 size-5 text-fg-quaternary" />;
+                                        })()}
+                                        {activeEntryInfo.name}
+                                    </p>
+                                )}
                                 <div className="ml-auto">{headerContent}</div>
                             </>
                         )}
@@ -442,6 +453,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                                 framesOverride={frames}
                                 navigationPages={navigationPages}
                                 onHeaderContentChange={setHeaderContent}
+                                onActiveEntryChange={setActiveEntryInfo}
                                 initialModalAction={initialModalAction}
                                 onModalActionHandled={() => {
                                     // Remove modal param from URL

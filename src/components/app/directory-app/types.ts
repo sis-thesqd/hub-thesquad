@@ -1,6 +1,13 @@
 import type React from "react";
 import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 
+export type ActiveEntryInfo = {
+    name: string;
+    emoji?: string;
+    icon?: string;
+    isPage: boolean;
+} | null;
+
 export type DirectoryAppProps = {
     initialDepartmentId?: string;
     initialPath?: string[];
@@ -11,6 +18,7 @@ export type DirectoryAppProps = {
     framesOverride?: Frame[];
     navigationPages?: NavigationPage[];
     onHeaderContentChange?: (content: React.ReactNode | null) => void;
+    onActiveEntryChange?: (entry: ActiveEntryInfo) => void;
     initialModalAction?: "folder" | "page" | null;
     onModalActionHandled?: () => void;
     favoriteEntryIds?: string[];
