@@ -35,6 +35,8 @@ export const DirectoryApp = ({
     variant = "full",
     showDepartments = true,
     departmentsOverride,
+    entriesOverride,
+    framesOverride,
     navigationPages = [],
     onHeaderContentChange,
 }: DirectoryAppProps) => {
@@ -67,6 +69,8 @@ export const DirectoryApp = ({
         initialDepartmentId,
         initialPath,
         departmentsOverride,
+        entriesOverride,
+        framesOverride,
     });
 
     const {

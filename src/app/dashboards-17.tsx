@@ -167,7 +167,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
 
                     <div className="min-h-0 flex-1 overflow-auto px-4 lg:px-8">
                         {isHomePage ? (
-                            <HomeGrid departments={departments} />
+                            <HomeGrid departments={departments} navigationPages={navigationPages} />
                         ) : (
                             <DirectoryApp
                                 initialDepartmentId={selectedDepartmentId || initialDepartmentId}
@@ -175,6 +175,8 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                                 variant="embedded"
                                 showDepartments={false}
                                 departmentsOverride={departments}
+                                entriesOverride={entries}
+                                framesOverride={frames}
                                 navigationPages={navigationPages}
                                 onHeaderContentChange={setHeaderContent}
                             />

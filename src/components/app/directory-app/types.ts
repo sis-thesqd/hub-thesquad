@@ -1,5 +1,5 @@
 import type React from "react";
-import type { NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
+import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 
 export type DirectoryAppProps = {
     initialDepartmentId?: string;
@@ -7,6 +7,8 @@ export type DirectoryAppProps = {
     variant?: "full" | "embedded";
     showDepartments?: boolean;
     departmentsOverride?: RipplingDepartment[];
+    entriesOverride?: DirectoryEntry[];
+    framesOverride?: Frame[];
     navigationPages?: NavigationPage[];
     onHeaderContentChange?: (content: React.ReactNode | null) => void;
 };

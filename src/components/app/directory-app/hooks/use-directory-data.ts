@@ -8,22 +8,27 @@ type UseDirectoryDataProps = {
     initialDepartmentId?: string;
     initialPath: string[];
     departmentsOverride?: RipplingDepartment[];
+    entriesOverride?: DirectoryEntry[];
+    framesOverride?: Frame[];
 };
 
 export const useDirectoryData = ({
     initialDepartmentId,
     initialPath,
     departmentsOverride,
+    entriesOverride,
+    framesOverride,
 }: UseDirectoryDataProps) => {
     const router = useRouter();
     const [departments, setDepartments] = useState<RipplingDepartment[]>(departmentsOverride ?? []);
     const [entries, setEntries] = useState<DirectoryEntry[]>([]);
     const [allFolders, setAllFolders] = useState<DirectoryEntry[]>([]);
-    const [frames, setFrames] = useState<Frame[]>([]);
+    const [frames, setFrames] = useState<Frame[]>(framesOverride ?? []);
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
     const [pathSegments, setPathSegments] = useState(initialPath);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [hasInitialData, setHasInitialData] = useState(!!(entriesOverride?.length && framesOverride?.length));
 
     useEffect(() => {
         setSelectedDepartmentId(initialDepartmentId ?? "");
@@ -84,6 +89,24 @@ export const useDirectoryData = ({
         setDepartments(departmentsOverride);
     }, [departmentsOverride]);
 
+    // Initialize from overrides if provided
+    useEffect(() => {
+        if (entriesOverride?.length && selectedDepartmentId) {
+            // Filter entries for the selected department
+            const deptEntries = entriesOverride.filter((e) => e.department_id === selectedDepartmentId);
+            setEntries(deptEntries);
+            // All folders from the override
+            const folders = entriesOverride.filter((e) => !e.frame_id);
+            setAllFolders(folders);
+        }
+    }, [entriesOverride, selectedDepartmentId]);
+
+    useEffect(() => {
+        if (framesOverride?.length) {
+            setFrames(framesOverride);
+        }
+    }, [framesOverride]);
+
     useEffect(() => {
         let isMounted = true;
 
@@ -127,8 +150,14 @@ export const useDirectoryData = ({
 
     useEffect(() => {
         if (!selectedDepartmentId) return;
+        // Skip initial fetch if we have override data
+        if (hasInitialData) {
+            setHasInitialData(false);
+            return;
+        }
         void refreshData(selectedDepartmentId);
-    }, [refreshData, selectedDepartmentId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedDepartmentId]);
 
     const frameById = useMemo(() => new Map(frames.map((frame) => [frame.id, frame])), [frames]);
 

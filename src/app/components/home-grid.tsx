@@ -1,39 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
-import type { NavigationPage, RipplingDepartment, ShConfig } from "@/utils/supabase/types";
-import { supabaseFetch } from "@/utils/supabase/rest";
+import type { NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 
 interface HomeGridProps {
     departments: RipplingDepartment[];
+    navigationPages: NavigationPage[];
 }
 
-export const HomeGrid = ({ departments }: HomeGridProps) => {
+export const HomeGrid = ({ departments, navigationPages }: HomeGridProps) => {
     const appendUrlParams = useAppendUrlParams();
-    const [navigationPages, setNavigationPages] = useState<NavigationPage[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const loadConfig = async () => {
-            try {
-                const data = await supabaseFetch<ShConfig<NavigationPage[]>[]>(
-                    "sh_config?key=eq.navigation_pages&select=value"
-                );
-                if (data?.[0]?.value) {
-                    setNavigationPages(data[0].value);
-                }
-            } catch (error) {
-                console.error("Failed to load navigation config:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        void loadConfig();
-    }, []);
 
     // Map navigation pages to departments
     const items = navigationPages.map((page) => {
@@ -53,25 +31,6 @@ export const HomeGrid = ({ departments }: HomeGridProps) => {
             href: department ? `/${department.id}` : "#",
         };
     });
-
-    if (isLoading) {
-        return (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {Array.from({ length: 8 }).map((_, i) => (
-                    <div
-                        key={i}
-                        className="flex h-[88px] animate-pulse items-center gap-4 rounded-xl border border-secondary_alt bg-primary p-4"
-                    >
-                        <div className="size-12 rounded-lg bg-secondary" />
-                        <div className="flex-1 space-y-2">
-                            <div className="h-4 w-24 rounded bg-secondary" />
-                            <div className="h-3 w-16 rounded bg-secondary" />
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
-    }
 
     return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
