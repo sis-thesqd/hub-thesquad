@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FolderClosed } from "@untitledui/icons";
 import { useClipboard } from "@/hooks/use-clipboard";
+import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { supabaseFetch, supabaseUpsert } from "@/utils/supabase/rest";
 import { getIconByName } from "@/utils/icon-map";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
@@ -38,6 +39,7 @@ export const DirectoryApp = ({
     onHeaderContentChange,
 }: DirectoryAppProps) => {
     const router = useRouter();
+    const appendUrlParams = useAppendUrlParams();
     const clipboard = useClipboard();
 
     const {
@@ -413,7 +415,7 @@ export const DirectoryApp = ({
         const targetPath = parentFolder
             ? buildPathSegments(allFoldersById, parentFolder).concat(firstPlacementSlug)
             : [firstPlacementSlug];
-        router.push(`/${targetDeptId}/${targetPath.join("/")}`);
+        router.push(appendUrlParams(`/${targetDeptId}/${targetPath.join("/")}`));
     };
 
     const handleUpdateFolder = async (entry: DirectoryEntry) => {

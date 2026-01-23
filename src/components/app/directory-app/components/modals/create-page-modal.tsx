@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { FC } from "react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
@@ -69,6 +69,17 @@ export const CreatePageModal = ({
         setSlugManuallyEdited(true);
         onFormChange({ ...form, slug: value });
     };
+
+    const isFormValid = useMemo(() => {
+        return (
+            form.name.trim() !== "" &&
+            form.slug.trim() !== "" &&
+            form.iframeUrl.trim() !== "" &&
+            form.description.trim() !== "" &&
+            pageDepartments.items.length > 0 &&
+            pagePlacements.items.length > 0
+        );
+    }, [form.name, form.slug, form.iframeUrl, form.description, pageDepartments.items.length, pagePlacements.items.length]);
 
     return (
         <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -142,7 +153,7 @@ export const CreatePageModal = ({
                                 <Button color="secondary" onClick={() => onOpenChange(false)}>
                                     Cancel
                                 </Button>
-                                <Button onClick={onSubmit}>Create page</Button>
+                                <Button onClick={onSubmit} isDisabled={!isFormValid}>Create page</Button>
                             </div>
                         </div>
                     </Dialog>

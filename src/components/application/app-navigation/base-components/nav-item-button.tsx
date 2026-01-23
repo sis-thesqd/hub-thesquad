@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { Pressable } from "react-aria-components";
 import { FileCode01, Folder } from "@untitledui/icons";
 import Link from "next/link";
+import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { cx } from "@/utils/cx";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
 import { supabaseFetch } from "@/utils/supabase/rest";
@@ -54,6 +55,7 @@ export const NavItemButton = ({
     onClick,
     departmentId,
 }: NavItemButtonProps) => {
+    const appendUrlParams = useAppendUrlParams();
     const [isHovered, setIsHovered] = useState(false);
     const [children, setChildren] = useState<DirectoryEntry[]>([]);
     const [frames, setFrames] = useState<Frame[]>([]);
@@ -195,7 +197,7 @@ export const NavItemButton = ({
             <Pressable>
                 <a
                     ref={buttonRef}
-                    href={href}
+                    href={href ? appendUrlParams(href) : href}
                     aria-label={label}
                     onClick={onClick}
                     className={cx(
@@ -234,7 +236,7 @@ export const NavItemButton = ({
                     {topLevelPages.length > 0 && (
                         <>
                             {topLevelPages.map((page) => {
-                                const pageHref = `/${page.department_id}/${page.slug}`;
+                                const pageHref = appendUrlParams(`/${page.department_id}/${page.slug}`);
                                 return (
                                     <Link
                                         key={page.id}
@@ -263,7 +265,7 @@ export const NavItemButton = ({
                     
                     {/* Folders with their child pages nested underneath */}
                     {topLevelFolders.map((folder) => {
-                        const folderHref = `/${folder.department_id}/${folder.slug}`;
+                        const folderHref = appendUrlParams(`/${folder.department_id}/${folder.slug}`);
                         const folderPages = pagesByParent.get(folder.id) || [];
 
                         return (
@@ -291,7 +293,7 @@ export const NavItemButton = ({
                                 {folderPages.length > 0 && (
                                     <div className="ml-6 pl-1">
                                         {folderPages.map((page) => {
-                                            const pageHref = `/${page.department_id}/${page.slug}`;
+                                            const pageHref = appendUrlParams(`/${page.department_id}/${page.slug}`);
                                             return (
                                                 <Link
                                                     key={page.id}

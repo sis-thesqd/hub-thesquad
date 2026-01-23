@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAppendUrlParams } from "@/hooks/use-url-params";
 import type { NavigationPage, RipplingDepartment, ShConfig } from "@/utils/supabase/types";
 import { supabaseFetch } from "@/utils/supabase/rest";
 import { getIconByName } from "@/utils/icon-map";
@@ -11,6 +12,7 @@ interface HomeGridProps {
 }
 
 export const HomeGrid = ({ departments }: HomeGridProps) => {
+    const appendUrlParams = useAppendUrlParams();
     const [navigationPages, setNavigationPages] = useState<NavigationPage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -75,10 +77,11 @@ export const HomeGrid = ({ departments }: HomeGridProps) => {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {items.map((item) => {
                 const Icon = getIconByName(item.icon);
+                const href = item.href !== "#" ? appendUrlParams(item.href) : item.href;
                 return (
                     <Link
                         key={item.slug}
-                        href={item.href}
+                        href={href}
                         className="group flex items-center gap-4 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
                     >
                         <div className="flex size-12 items-center justify-center rounded-lg bg-secondary">

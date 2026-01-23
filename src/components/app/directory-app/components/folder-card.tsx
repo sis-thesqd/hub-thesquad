@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Folder } from "@untitledui/icons";
+import { useAppendUrlParams } from "@/hooks/use-url-params";
 import type { DirectoryEntry } from "@/utils/supabase/types";
 
 type FolderCardProps = {
@@ -9,7 +12,9 @@ type FolderCardProps = {
 };
 
 export const FolderCard = ({ entry, path, childCount }: FolderCardProps) => {
-    const href = `/${entry.department_id}/${path.join("/")}`;
+    const appendUrlParams = useAppendUrlParams();
+    const basePath = `/${entry.department_id}/${path.join("/")}`;
+    const href = appendUrlParams(basePath);
 
     return (
         <Link

@@ -4,6 +4,7 @@ import type { FC, HTMLAttributes, MouseEventHandler, ReactNode } from "react";
 import { ChevronDown, Share04 } from "@untitledui/icons";
 import { Link as AriaLink } from "react-aria-components";
 import { Badge } from "@/components/base/badges/badges";
+import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { cx, sortCx } from "@/utils/cx";
 
 const styles = sortCx({
@@ -35,6 +36,12 @@ interface NavItemBaseProps {
 }
 
 export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, truncate = true, onClick }: NavItemBaseProps) => {
+    const appendUrlParams = useAppendUrlParams();
+
+    // Compute href with URL params (only for internal links)
+    const isExternal = href && href.startsWith("http");
+    const hrefWithParams = href && !isExternal ? appendUrlParams(href) : href;
+
     const iconElement = Icon && <Icon aria-hidden="true" className="mr-2 size-5 shrink-0 text-fg-quaternary transition-inherit-all" />;
 
     const badgeElement =
@@ -58,7 +65,6 @@ export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, 
         </span>
     );
 
-    const isExternal = href && href.startsWith("http");
     const externalIcon = isExternal && <Share04 className="size-4 stroke-[2.5px] text-fg-quaternary" />;
 
     if (type === "collapsible") {
@@ -78,7 +84,7 @@ export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, 
     if (type === "collapsible-child") {
         return (
             <AriaLink
-                href={href!}
+                href={hrefWithParams!}
                 target={isExternal ? "_blank" : "_self"}
                 rel="noopener noreferrer"
                 className={cx("py-2 pr-3 pl-10", styles.root, current && styles.rootSelected)}
@@ -94,7 +100,7 @@ export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, 
 
     return (
         <AriaLink
-            href={href!}
+            href={hrefWithParams!}
             target={isExternal ? "_blank" : "_self"}
             rel="noopener noreferrer"
             className={cx("px-3 py-2", styles.root, current && styles.rootSelected)}

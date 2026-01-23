@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { FileCode01 } from "@untitledui/icons";
+import { useAppendUrlParams } from "@/hooks/use-url-params";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
 
 type PageCardProps = {
@@ -9,7 +12,9 @@ type PageCardProps = {
 };
 
 export const PageCard = ({ entry, path, frame }: PageCardProps) => {
-    const href = `/${entry.department_id}/${path.join("/")}`;
+    const appendUrlParams = useAppendUrlParams();
+    const basePath = `/${entry.department_id}/${path.join("/")}`;
+    const href = appendUrlParams(basePath);
 
     return (
         <Link

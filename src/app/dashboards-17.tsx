@@ -11,6 +11,7 @@ import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment, ShConfi
 import { supabaseFetch } from "@/utils/supabase/rest";
 import { getIconByName } from "@/utils/icon-map";
 import { useAuth } from "@/providers/auth-provider";
+import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { HomeGrid } from "./components/home-grid";
 
 interface Dashboard17Props {
@@ -20,6 +21,7 @@ interface Dashboard17Props {
 
 export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Props) => {
     const router = useRouter();
+    const appendUrlParams = useAppendUrlParams();
     const { worker } = useAuth();
     const [departments, setDepartments] = useState<RipplingDepartment[]>([]);
     const [navigationPages, setNavigationPages] = useState<NavigationPage[]>([]);
@@ -95,7 +97,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
 
     const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
         if (type === "department") {
-            router.push(`/${id}`);
+            router.push(appendUrlParams(`/${id}`));
         } else if (type === "folder") {
             // Find the folder to get its department and build the path
             const folder = entries.find((e) => e.id === id);
@@ -112,7 +114,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                         break;
                     }
                 }
-                router.push(`/${folder.department_id}/${pathParts.join("/")}`);
+                router.push(appendUrlParams(`/${folder.department_id}/${pathParts.join("/")}`));
             }
         } else if (type === "page") {
             // Find the frame and its entry to navigate
@@ -131,10 +133,10 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                         break;
                     }
                 }
-                router.push(`/${entry.department_id}/${pathParts.join("/")}`);
+                router.push(appendUrlParams(`/${entry.department_id}/${pathParts.join("/")}`));
             }
         }
-    }, [entries, frames, router]);
+    }, [appendUrlParams, entries, frames, router]);
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
