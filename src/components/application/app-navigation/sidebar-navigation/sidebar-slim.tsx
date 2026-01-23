@@ -55,8 +55,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
     const fallbackItem = items[0] || footerItems[0] || { label: "", href: "", icon: Star01 };
     const [currentItem, setCurrentItem] = useState(activeItem || fallbackItem);
     const [isHovering, setIsHovering] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(true);
-    const [hasMounted, setHasMounted] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState<boolean | null>(null);
 
     // Load collapsed state from localStorage on mount (respecting user's default preference)
     useEffect(() => {
@@ -70,8 +69,6 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
             // If default is "true" (open), collapsed should be false; if null/undefined, default to open
             setIsCollapsed(defaultExpanded === "false");
         }
-        // Mark as mounted after reading state to prevent animation on initial render
-        setHasMounted(true);
     }, []);
 
     const displayName = worker?.display_name || worker?.given_name || "User";
@@ -102,11 +99,14 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
     const MAIN_SIDEBAR_WIDTH = isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
     const SECONDARY_SIDEBAR_WIDTH = 268;
 
+    // Don't render until we know the collapsed state from localStorage
+    if (isCollapsed === null) {
+        return null;
+    }
+
     const mainSidebar = (
-        <motion.aside
-            initial={false}
-            animate={{ width: MAIN_SIDEBAR_WIDTH }}
-            transition={hasMounted ? { type: "spring", damping: 26, stiffness: 220, bounce: 0 } : { duration: 0 }}
+        <aside
+            style={{ width: MAIN_SIDEBAR_WIDTH }}
             className={cx(
                 "group flex h-full max-h-full overflow-y-auto overflow-x-hidden py-1 pl-1",
                 isSecondarySidebarVisible && "bg-primary",
@@ -297,7 +297,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                     </div>
                 </div>
             </div>
-        </motion.aside>
+        </aside>
     );
 
     const secondarySidebar = (
@@ -352,10 +352,8 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
             </div>
 
             {/* Placeholder to take up physical space because the real sidebar has `fixed` position. */}
-            <motion.div
-                initial={false}
-                animate={{ paddingLeft: MAIN_SIDEBAR_WIDTH }}
-                transition={hasMounted ? { type: "spring", damping: 26, stiffness: 220, bounce: 0 } : { duration: 0 }}
+            <div
+                style={{ paddingLeft: MAIN_SIDEBAR_WIDTH }}
                 className="invisible hidden lg:sticky lg:top-0 lg:bottom-0 lg:left-0 lg:block"
             />
 
