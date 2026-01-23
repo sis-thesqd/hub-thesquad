@@ -106,24 +106,12 @@ const FilloutGuideContent = () => (
 
         <h3 className="mt-6 text-md font-semibold text-primary">Step 3: Add a New Parameter</h3>
         <p className="text-sm text-tertiary">
-            Click <strong>Add new</strong> to create a new URL parameter.
+            Click <strong>Add new</strong> to create a new URL parameter. Enter the name of the parameter you want to receive — the name must match exactly what will be passed in the URL.
         </p>
         <figure className="my-4">
             <img
                 src="/images/guides/fillout/step-3.png"
-                alt="Add new parameter button"
-                className="w-full rounded-lg border border-secondary"
-            />
-        </figure>
-
-        <h3 className="mt-6 text-md font-semibold text-primary">Step 4: Name Your Parameter</h3>
-        <p className="text-sm text-tertiary">
-            Enter the name of the parameter you want to receive. The name must match exactly what will be passed in the URL.
-        </p>
-        <figure className="my-4">
-            <img
-                src="/images/guides/fillout/step-4.png"
-                alt="Parameter name input"
+                alt="Add new parameter dialog"
                 className="w-full rounded-lg border border-secondary"
             />
         </figure>
@@ -138,9 +126,19 @@ const FilloutGuideContent = () => (
             </ul>
         </div>
 
-        <h3 className="mt-6 text-md font-semibold text-primary">Using Parameters in Your Form</h3>
+        <h3 className="mt-6 text-md font-semibold text-primary">Step 4: Use Parameter in Your Form</h3>
         <p className="text-sm text-tertiary">
-            Once configured, you can use URL parameters to:
+            Once added, you can use the parameter anywhere in your form. Click the <strong>@</strong> button or type <strong>@</strong> to open the variable picker and select your URL parameter.
+        </p>
+        <figure className="my-4">
+            <img
+                src="/images/guides/fillout/step-4.png"
+                alt="Using parameter in form with variable picker"
+                className="w-full rounded-lg border border-secondary"
+            />
+        </figure>
+        <p className="text-sm text-tertiary">
+            You can use URL parameters to:
         </p>
         <ul className="mt-2 space-y-1 text-sm text-tertiary">
             <li>Pre-fill form fields with user data</li>
