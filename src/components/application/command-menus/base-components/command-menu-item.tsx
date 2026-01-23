@@ -36,11 +36,17 @@ interface CommandDropdownMenuItemDotType extends CommandMenuItemBaseType {
     dotColor: "green";
 }
 
+interface CommandDropdownMenuItemEmojiType extends CommandMenuItemBaseType {
+    type: "emoji";
+    emoji: string;
+}
+
 export type CommandDropdownMenuItemType =
     | CommandDropdownMenuItemDefaultType
     | CommandDropdownMenuItemIconType
     | CommandDropdownMenuItemAvatarType
-    | CommandDropdownMenuItemDotType;
+    | CommandDropdownMenuItemDotType
+    | CommandDropdownMenuItemEmojiType;
 
 const styles = {
     sm: { wrapper: "py-2 px-2.5", label: "text-sm font-medium", description: "text-sm" },
@@ -67,7 +73,7 @@ export const CommandDropdownMenuItem = ({
 }: CommandDropdownMenuItemProps) => {
     return (
         <ListBoxItem
-            {...omit(props, ["type", "icon", "alt", "src"])}
+            {...omit(props, ["type", "icon", "alt", "src", "emoji"])}
             textValue={label}
             className={(state) => cx("group block cursor-pointer px-2 py-0.5 outline-hidden", typeof className === "function" ? className(state) : className)}
         >
@@ -98,6 +104,15 @@ export const CommandDropdownMenuItem = ({
                         >
                             <circle cx="5" cy="5" r="4" fill="currentColor" />
                         </svg>
+                    )}
+
+                    {props.type === "emoji" && (
+                        <div className={cx(
+                            "mr-2 flex shrink-0 items-center justify-center rounded-lg border border-secondary bg-secondary text-lg",
+                            stacked ? "size-10" : "size-6 text-sm"
+                        )}>
+                            {props.emoji}
+                        </div>
                     )}
 
                     <div className={cx("flex flex-1 gap-x-2", stacked && "flex-col")}>

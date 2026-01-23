@@ -11,6 +11,8 @@ export type DirectoryAppProps = {
     framesOverride?: Frame[];
     navigationPages?: NavigationPage[];
     onHeaderContentChange?: (content: React.ReactNode | null) => void;
+    initialModalAction?: "folder" | "page" | null;
+    onModalActionHandled?: () => void;
 };
 
 export type FormState = {

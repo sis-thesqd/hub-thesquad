@@ -10,6 +10,7 @@ import type { FormState } from "../../types";
 import { useListData } from "react-stately";
 import { EmojiPickerField } from "../emoji-picker-field";
 import { slugify } from "../../utils";
+import { getRandomEmoji } from "../../constants";
 
 type FolderOption = {
     id: string;
@@ -50,11 +51,16 @@ export const CreatePageModal = ({
 }: CreatePageModalProps) => {
     const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
 
-    // Reset manual edit flag when modal opens
+    // Reset manual edit flag and set random emoji when modal opens
     useEffect(() => {
         if (isOpen) {
             setSlugManuallyEdited(false);
+            // Set random emoji if not already set
+            if (!form.emoji) {
+                onFormChange({ ...form, emoji: getRandomEmoji() });
+            }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
 
     const handleNameChange = (value: string) => {
@@ -74,12 +80,13 @@ export const CreatePageModal = ({
         return (
             form.name.trim() !== "" &&
             form.slug.trim() !== "" &&
+            form.emoji.trim() !== "" &&
             form.iframeUrl.trim() !== "" &&
             form.description.trim() !== "" &&
             pageDepartments.items.length > 0 &&
             pagePlacements.items.length > 0
         );
-    }, [form.name, form.slug, form.iframeUrl, form.description, pageDepartments.items.length, pagePlacements.items.length]);
+    }, [form.name, form.slug, form.emoji, form.iframeUrl, form.description, pageDepartments.items.length, pagePlacements.items.length]);
 
     return (
         <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>

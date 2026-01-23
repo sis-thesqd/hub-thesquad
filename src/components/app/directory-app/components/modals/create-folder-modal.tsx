@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
@@ -6,6 +6,7 @@ import { Dialog, DialogTrigger, Modal, ModalOverlay } from "@/components/applica
 import type { FormState } from "../../types";
 import { EmojiPickerField } from "../emoji-picker-field";
 import { slugify } from "../../utils";
+import { getRandomEmoji } from "../../constants";
 
 type ParentOption = {
     id: string;
@@ -37,12 +38,26 @@ export const CreateFolderModal = ({
 }: CreateFolderModalProps) => {
     const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
 
-    // Reset manual edit flag when modal opens
+    // Reset manual edit flag and set random emoji when modal opens
     useEffect(() => {
         if (isOpen) {
             setSlugManuallyEdited(false);
+            // Set random emoji if not already set
+            if (!form.emoji) {
+                onFormChange({ ...form, emoji: getRandomEmoji() });
+            }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
+
+    const isFormValid = useMemo(() => {
+        return (
+            form.name.trim() !== "" &&
+            form.slug.trim() !== "" &&
+            form.emoji.trim() !== "" &&
+            parentId !== undefined
+        );
+    }, [form.name, form.slug, form.emoji, parentId]);
 
     const handleNameChange = (value: string) => {
         if (!slugManuallyEdited) {
@@ -111,7 +126,7 @@ export const CreateFolderModal = ({
                                 <Button color="secondary" onClick={() => onOpenChange(false)}>
                                     Cancel
                                 </Button>
-                                <Button onClick={onSubmit}>Create folder</Button>
+                                <Button onClick={onSubmit} isDisabled={!isFormValid}>Create folder</Button>
                             </div>
                         </div>
                     </Dialog>

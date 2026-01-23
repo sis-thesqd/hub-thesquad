@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
+import { Badge } from "@/components/base/badges/badges";
 import type { NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 
 interface HomeGridProps {
     departments: RipplingDepartment[];
     navigationPages: NavigationPage[];
+    userDepartmentId: string | null;
 }
 
-export const HomeGrid = ({ departments, navigationPages }: HomeGridProps) => {
+export const HomeGrid = ({ departments, navigationPages, userDepartmentId }: HomeGridProps) => {
     const appendUrlParams = useAppendUrlParams();
 
     // Map navigation pages to departments
@@ -37,6 +39,7 @@ export const HomeGrid = ({ departments, navigationPages }: HomeGridProps) => {
             {items.map((item) => {
                 const Icon = getIconByName(item.icon);
                 const href = item.href !== "#" ? appendUrlParams(item.href) : item.href;
+                const isUserDepartment = item.departmentId === userDepartmentId;
                 return (
                     <Link
                         key={item.slug}
@@ -47,7 +50,14 @@ export const HomeGrid = ({ departments, navigationPages }: HomeGridProps) => {
                             <Icon className="size-6 text-fg-tertiary group-hover:text-brand-secondary" />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium text-primary">{item.title}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="truncate font-medium text-primary">{item.title}</p>
+                                {isUserDepartment && (
+                                    <Badge size="sm" color="brand" type="pill-color">
+                                        Your team
+                                    </Badge>
+                                )}
+                            </div>
                         </div>
                     </Link>
                 );

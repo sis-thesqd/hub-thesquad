@@ -40,6 +40,8 @@ export const DirectoryApp = ({
     framesOverride,
     navigationPages = [],
     onHeaderContentChange,
+    initialModalAction,
+    onModalActionHandled,
 }: DirectoryAppProps) => {
     const router = useRouter();
     const appendUrlParams = useAppendUrlParams();
@@ -93,6 +95,24 @@ export const DirectoryApp = ({
     const [folderForm, setFolderForm] = useState<FormState>(emptyForm);
     const [pageForm, setPageForm] = useState<FormState>(emptyForm);
     const [createFolderParentId, setCreateFolderParentId] = useState<string | null>(null);
+
+    // Handle initial modal action from parent (e.g., home page buttons)
+    useEffect(() => {
+        if (!initialModalAction || !selectedDepartmentId) return;
+
+        if (initialModalAction === "folder") {
+            setFolderForm(emptyForm);
+            setCreateFolderParentId(null);
+            setCreateFolderOpen(true);
+        } else if (initialModalAction === "page") {
+            setPageForm(emptyForm);
+            clearSelectedItems(pagePlacements);
+            clearSelectedItems(pageDepartments);
+            setCreatePageOpen(true);
+        }
+
+        onModalActionHandled?.();
+    }, [initialModalAction, selectedDepartmentId, clearSelectedItems, pagePlacements, pageDepartments, onModalActionHandled]);
 
     const folderOptions = useMemo(() => {
         const options = allFolders.map((folder) => {

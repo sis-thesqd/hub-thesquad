@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type React from "react";
 import { useRouter } from "next/navigation";
-import { FolderClosed } from "@untitledui/icons";
+import { File06, FolderClosed, Plus } from "@untitledui/icons";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 import { DirectoryApp } from "@/components/app/directory-app";
 import { DirectoryCommandMenu } from "@/components/app/directory-app/components/directory-command-menu";
@@ -12,6 +12,7 @@ import { supabaseFetch } from "@/utils/supabase/rest";
 import { getIconByName } from "@/utils/icon-map";
 import { useAuth } from "@/providers/auth-provider";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
+import { Button } from "@/components/base/buttons/button";
 import { HomeGrid } from "./components/home-grid";
 import { RecentPages } from "./components/recent-pages";
 
@@ -31,6 +32,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
     const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
     const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+    const [pendingModalAction, setPendingModalAction] = useState<"folder" | "page" | null>(null);
 
     const isHomePage = !initialDepartmentId;
     const firstName = worker?.preferred_given_name || worker?.given_name || "there";
@@ -96,6 +98,24 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
         }).filter((item) => item.href !== "#");
     }, [departments, navigationPages]);
 
+    const handleHomePageNewFolder = useCallback(() => {
+        // Navigate to user's department (or first available) and trigger folder modal
+        const targetDeptId = worker?.department_id || departments[0]?.id;
+        if (targetDeptId) {
+            setPendingModalAction("folder");
+            router.push(appendUrlParams(`/${targetDeptId}`));
+        }
+    }, [worker?.department_id, departments, router, appendUrlParams]);
+
+    const handleHomePageNewPage = useCallback(() => {
+        // Navigate to user's department (or first available) and trigger page modal
+        const targetDeptId = worker?.department_id || departments[0]?.id;
+        if (targetDeptId) {
+            setPendingModalAction("page");
+            router.push(appendUrlParams(`/${targetDeptId}`));
+        }
+    }, [worker?.department_id, departments, router, appendUrlParams]);
+
     const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
         if (type === "department") {
             router.push(appendUrlParams(`/${id}`));
@@ -154,22 +174,33 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                 departments={departments}
                 entries={entries}
                 frames={frames}
+                navigationPages={navigationPages}
                 onSelect={handleCommandMenuSelect}
             />
             <main className="min-w-0 flex-1 overflow-hidden lg:pt-2 lg:pl-1">
                 <div className="flex h-full flex-col gap-8 overflow-hidden border-secondary pt-8 pb-12 lg:rounded-tl-[24px] lg:border-t lg:border-l">
-                    <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:px-8">
+                    <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:items-center lg:px-8">
                         {headerContent || (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">
                                 {isHomePage ? `Hello, ${firstName}` : ""}
                             </p>
+                        )}
+                        {isHomePage && departments.length > 0 && (
+                            <div className="flex gap-2">
+                                <Button color="secondary" size="md" iconLeading={Plus} onClick={handleHomePageNewFolder}>
+                                    New folder
+                                </Button>
+                                <Button color="primary" size="md" iconLeading={Plus} onClick={handleHomePageNewPage}>
+                                    New page
+                                </Button>
+                            </div>
                         )}
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-auto px-4 lg:px-8">
                         {isHomePage ? (
                             <>
-                                <HomeGrid departments={departments} navigationPages={navigationPages} />
+                                <HomeGrid departments={departments} navigationPages={navigationPages} userDepartmentId={worker?.department_id ?? null} />
                                 <RecentPages
                                     entries={entries}
                                     frames={frames}
@@ -187,6 +218,8 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath }: Dashboard17Pro
                                 framesOverride={frames}
                                 navigationPages={navigationPages}
                                 onHeaderContentChange={setHeaderContent}
+                                initialModalAction={pendingModalAction}
+                                onModalActionHandled={() => setPendingModalAction(null)}
                             />
                         )}
                     </div>
