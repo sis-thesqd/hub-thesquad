@@ -3,6 +3,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { cx } from "@/utils/cx";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
+import { UrlParamsInfoSlideout } from "./url-params-info-slideout";
 
 type EmbeddedHeaderContentProps = {
     activeEntry: DirectoryEntry;
@@ -53,6 +54,7 @@ export const EmbeddedHeaderContent = ({
                 >
                     Edit
                 </Button>
+                <UrlParamsInfoSlideout iframeUrl={activeFrame.iframe_url} />
                 <Dropdown.Root>
                     <Button
                         size="sm"
