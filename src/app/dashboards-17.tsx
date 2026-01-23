@@ -370,8 +370,9 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                         {headerContent || (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">
                                 {isHomePage && hasLoadedName ? (
-                                    <AnimatedGroup staggerDelay={0.08} distance={8}>
-                                        <span>Hello, </span>
+                                    <AnimatedGroup staggerDelay={0.09} distance={4}>
+                                        <span>Hello,</span>
+                                        <span className="inline-block w-2" aria-hidden="true"></span>
                                         <span>{firstName}</span>
                                     </AnimatedGroup>
                                 ) : isFavoritesPage ? "Favorites" : ""}
