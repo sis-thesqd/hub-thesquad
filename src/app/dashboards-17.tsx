@@ -23,6 +23,7 @@ import { RecentPages } from "./components/recent-pages";
 import { FavoritesView } from "./components/favorites-view";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useDirectoryQueries, useInvalidateDirectory } from "@/hooks/use-directory-queries";
+import { AnimatedGroup } from "@/components/base/animated-group/animated-group";
 
 interface Dashboard17Props {
     initialDepartmentId?: string;
@@ -69,7 +70,8 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     // Read modal action from URL params
     const modalParam = urlParams.get("modal");
     const initialModalAction = (modalParam === "folder" || modalParam === "page") ? modalParam : null;
-    const firstName = worker?.preferred_given_name || worker?.given_name || "there";
+    const firstName = worker?.preferred_given_name || worker?.given_name;
+    const hasLoadedName = Boolean(firstName);
 
     useEffect(() => {
         setSelectedDepartmentId(initialDepartmentId ?? "");
@@ -364,7 +366,12 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                     <div className="flex flex-col justify-between gap-4 px-4 lg:flex-row lg:items-center lg:px-8">
                         {headerContent || (
                             <p className="text-xl font-semibold text-primary lg:text-display-xs">
-                                {isHomePage ? `Hello, ${firstName}` : isFavoritesPage ? "Favorites" : ""}
+                                {isHomePage && hasLoadedName ? (
+                                    <AnimatedGroup staggerDelay={0.08} distance={8}>
+                                        <span>Hello, </span>
+                                        <span>{firstName}</span>
+                                    </AnimatedGroup>
+                                ) : isFavoritesPage ? "Favorites" : ""}
                             </p>
                         )}
                         {isHomePage && departments.length > 0 && (
