@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUrlParams } from "@/hooks/use-url-params";
+import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import type { Frame } from "@/utils/supabase/types";
+import { cx } from "@/utils/cx";
 
 type IframeViewProps = {
     frame: Frame;
@@ -10,6 +12,7 @@ type IframeViewProps = {
 
 export const IframeView = ({ frame }: IframeViewProps) => {
     const urlParams = useUrlParams();
+    const [isLoading, setIsLoading] = useState(true);
 
     const iframeSrc = useMemo(() => {
         if (!frame.iframe_url) return "";
@@ -30,14 +33,32 @@ export const IframeView = ({ frame }: IframeViewProps) => {
         }
     }, [frame.iframe_url, urlParams]);
 
+    // Reset loading state when frame changes
+    useEffect(() => {
+        setIsLoading(true);
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [frame.id]);
+
     return (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-secondary_alt bg-primary">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-secondary_alt bg-primary">
             <iframe
                 title={frame.name}
                 src={iframeSrc}
-                className="h-full w-full border-0"
+                className={cx(
+                    "h-full w-full border-0 transition-[filter] duration-300",
+                    isLoading && "blur-sm"
+                )}
                 allow="clipboard-read; clipboard-write; fullscreen;"
             />
+            {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-primary/50">
+                    <LoadingIndicator type="line-simple" size="md" />
+                </div>
+            )}
         </div>
     );
 };

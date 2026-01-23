@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { FileCode01 } from "@untitledui/icons";
+import { FileCode01, Star01 } from "@untitledui/icons";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
 
@@ -10,6 +10,7 @@ interface RecentPagesProps {
     entries: DirectoryEntry[];
     frames: Frame[];
     userDepartmentId: string | null;
+    favoriteEntryIds?: string[];
 }
 
 // Build path segments from entry to root
@@ -33,7 +34,7 @@ const buildPathToRoot = (
     return pathParts;
 };
 
-export const RecentPages = ({ entries, frames, userDepartmentId }: RecentPagesProps) => {
+export const RecentPages = ({ entries, frames, userDepartmentId, favoriteEntryIds = [] }: RecentPagesProps) => {
     const appendUrlParams = useAppendUrlParams();
 
     const recentPages = useMemo(() => {
@@ -70,6 +71,7 @@ export const RecentPages = ({ entries, frames, userDepartmentId }: RecentPagesPr
 
             return {
                 id: frame.id,
+                entryId: entry.id,
                 name: frame.name,
                 description: frame.description,
                 emoji: entry.emoji,
@@ -78,6 +80,7 @@ export const RecentPages = ({ entries, frames, userDepartmentId }: RecentPagesPr
             };
         }).filter(Boolean) as Array<{
             id: string;
+            entryId: string;
             name: string;
             description: string | null;
             emoji: string | null;
@@ -96,12 +99,18 @@ export const RecentPages = ({ entries, frames, userDepartmentId }: RecentPagesPr
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {recentPages.map((page) => {
                     const href = appendUrlParams(page.href);
+                    const isFavorite = favoriteEntryIds.includes(page.entryId);
                     return (
                         <Link
                             key={page.id}
                             href={href}
-                            className="group flex items-start gap-3 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
+                            className="group relative flex items-start gap-3 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
                         >
+                            {isFavorite && (
+                                <div className="absolute top-2 right-2">
+                                    <Star01 className="size-4 fill-warning-primary text-warning-primary" />
+                                </div>
+                            )}
                             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
                                 {page.emoji ? (
                                     <span className="text-lg">{page.emoji}</span>

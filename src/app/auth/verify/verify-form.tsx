@@ -105,7 +105,6 @@ export const VerifyForm = () => {
                 email,
                 options: {
                     shouldCreateUser: false,
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
                 },
             });
 

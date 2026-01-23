@@ -51,6 +51,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
         favoriteDepartmentIds,
         favoriteEntryIds,
         toggleFavorite,
+        isLoading: isFavoritesLoading,
     } = useFavorites({ userId: worker?.id });
 
     // Home page modal states
@@ -395,6 +396,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                                 departments={departments}
                                 navigationPages={navigationPages}
                                 onToggleFavorite={(entryId, departmentId) => toggleFavorite(entryId, departmentId)}
+                                isLoading={isFavoritesLoading}
                             />
                         ) : isHomePage ? (
                             <>
@@ -410,6 +412,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                                     entries={entries}
                                     frames={frames}
                                     userDepartmentId={worker?.department_id ?? null}
+                                    favoriteEntryIds={favoriteEntryIds}
                                 />
                             </>
                         ) : (

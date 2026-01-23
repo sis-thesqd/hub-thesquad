@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabaseFetch, supabaseUpsert } from "@/utils/supabase/rest";
 import type { ShFavorite } from "@/utils/supabase/types";
 
@@ -8,33 +9,28 @@ interface UseFavoritesOptions {
     userId: string | undefined;
 }
 
+// Query key for favorites
+export const favoritesKeys = {
+    all: ["favorites"] as const,
+    user: (userId: string) => [...favoritesKeys.all, userId] as const,
+};
+
+const fetchFavorites = async (userId: string): Promise<ShFavorite[]> => {
+    return supabaseFetch<ShFavorite[]>(
+        `sh_favorites?user_id=eq.${encodeURIComponent(userId)}&select=*&order=created_at.desc`,
+        { skipCache: true }
+    );
+};
+
 export const useFavorites = ({ userId }: UseFavoritesOptions) => {
-    const [favorites, setFavorites] = useState<ShFavorite[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const queryClient = useQueryClient();
 
-    const loadFavorites = useCallback(async () => {
-        if (!userId) {
-            setFavorites([]);
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            const data = await supabaseFetch<ShFavorite[]>(
-                `sh_favorites?user_id=eq.${encodeURIComponent(userId)}&select=*&order=created_at.desc`
-            );
-            setFavorites(data);
-        } catch (err) {
-            console.error("Failed to load favorites:", err);
-            setFavorites([]);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [userId]);
-
-    useEffect(() => {
-        void loadFavorites();
-    }, [loadFavorites]);
+    const { data: favorites = [], isLoading, refetch } = useQuery({
+        queryKey: favoritesKeys.user(userId ?? ""),
+        queryFn: () => fetchFavorites(userId!),
+        enabled: !!userId,
+        staleTime: 1 * 60 * 1000, // 1 minute
+    });
 
     const isFavorite = useCallback(
         (entryId?: string, departmentId?: string): boolean => {
@@ -58,13 +54,18 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
             );
 
             if (existing) {
+                // Optimistically update
+                queryClient.setQueryData<ShFavorite[]>(
+                    favoritesKeys.user(userId),
+                    (old) => old?.filter((f) => f.id !== existing.id) ?? []
+                );
+
                 // Remove favorite
                 await supabaseFetch(`sh_favorites?id=eq.${existing.id}`, {
                     method: "DELETE",
                 });
-                setFavorites((prev) => prev.filter((f) => f.id !== existing.id));
             } else {
-                // Add favorite - supabaseUpsert returns an array
+                // Add favorite
                 const result = await supabaseUpsert<ShFavorite[]>("sh_favorites", {
                     user_id: userId,
                     entry_id: entryId || null,
@@ -72,11 +73,15 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
                 });
                 const newFavorite = Array.isArray(result) ? result[0] : result;
                 if (newFavorite) {
-                    setFavorites((prev) => [newFavorite, ...prev]);
+                    // Optimistically update
+                    queryClient.setQueryData<ShFavorite[]>(
+                        favoritesKeys.user(userId),
+                        (old) => [newFavorite, ...(old ?? [])]
+                    );
                 }
             }
         },
-        [userId, favorites]
+        [userId, favorites, queryClient]
     );
 
     const favoriteEntryIds = useMemo(
@@ -91,11 +96,11 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
 
     return {
         favorites,
-        isLoading,
+        isLoading: isLoading && !!userId,
         isFavorite,
         toggleFavorite,
         favoriteEntryIds,
         favoriteDepartmentIds,
-        refreshFavorites: loadFavorites,
+        refreshFavorites: refetch,
     };
 };

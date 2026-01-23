@@ -47,12 +47,11 @@ export const LoginForm = () => {
                 return;
             }
 
-            // Send magic link
+            // Send OTP code
             const { error: signInError } = await supabase.auth.signInWithOtp({
                 email,
                 options: {
                     shouldCreateUser: true,
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
                 },
             });
 
@@ -103,7 +102,7 @@ export const LoginForm = () => {
         <div className="flex min-h-screen items-center justify-center bg-primary px-4">
             <div className="w-full max-w-[360px]">
                 {/* Logo */}
-                <div className="mb-8 flex justify-center">
+                <div className="mb-2 flex justify-center">
                     <div className="flex size-14 items-center justify-center rounded-xl bg-primary shadow-xs outline-none">
                         <img
                             src="/sqd-badge.png"

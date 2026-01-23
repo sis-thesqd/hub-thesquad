@@ -6,6 +6,7 @@ import { Star01 } from "@untitledui/icons";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { FolderCard, PageCard } from "@/components/app/directory-app/components";
 import { EmptyState } from "@/components/application/empty-state/empty-state";
+import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment, ShFavorite } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 import { cx } from "@/utils/cx";
@@ -17,6 +18,7 @@ interface FavoritesViewProps {
     departments: RipplingDepartment[];
     navigationPages: NavigationPage[];
     onToggleFavorite: (entryId?: string, departmentId?: string) => void;
+    isLoading?: boolean;
 }
 
 // Build path segments from entry to root
@@ -47,6 +49,7 @@ export const FavoritesView = ({
     departments,
     navigationPages,
     onToggleFavorite,
+    isLoading = false,
 }: FavoritesViewProps) => {
     const appendUrlParams = useAppendUrlParams();
 
@@ -108,6 +111,15 @@ export const FavoritesView = ({
         favoriteDepartments.length === 0 &&
         favoriteFolders.length === 0 &&
         favoritePages.length === 0;
+
+    // Show loading state while favorites are being fetched
+    if (isLoading) {
+        return (
+            <div className="flex h-full min-h-[400px] items-center justify-center">
+                <LoadingIndicator type="line-simple" size="md" />
+            </div>
+        );
+    }
 
     if (hasNoFavorites) {
         return (
