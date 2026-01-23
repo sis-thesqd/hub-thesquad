@@ -28,7 +28,7 @@ export const Label = ({ isRequired, tooltip, tooltipDescription, className, ...p
         >
             {props.children}
 
-            <span className={cx("hidden text-brand-tertiary", isRequired && "block", typeof isRequired === "undefined" && "group-required:block")}>*</span>
+            <span className={cx("hidden text-fg-error_primary", isRequired && "block", typeof isRequired === "undefined" && "group-required:block")}>*</span>
 
             {tooltip && (
                 <Tooltip title={tooltip} description={tooltipDescription} placement="top">

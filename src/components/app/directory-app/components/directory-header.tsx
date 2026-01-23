@@ -27,7 +27,6 @@ export const DirectoryHeader = ({
                     <Button
                         size="sm"
                         color="tertiary"
-                        iconLeading={Edit01}
                         onClick={onEditFolder}
                     >
                         Edit

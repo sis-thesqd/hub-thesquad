@@ -72,18 +72,21 @@ export const CreateFolderModal = ({
                                 <EmojiPickerField
                                     value={form.emoji}
                                     onChange={(emoji) => onFormChange({ ...form, emoji })}
+                                    isRequired
                                 />
                                 <Input
                                     label="Folder name"
                                     value={form.name}
                                     onChange={handleNameChange}
                                     placeholder="e.g. Reporting"
+                                    isRequired
                                 />
                                 <Input
                                     label="Slug"
                                     value={form.slug}
                                     onChange={handleSlugChange}
                                     placeholder="auto-generated"
+                                    isRequired
                                 />
                                 <Select.ComboBox
                                     label="Parent folder"
@@ -94,6 +97,7 @@ export const CreateFolderModal = ({
                                         onParentIdChange(value === "root" ? null : value);
                                     }}
                                     placeholder="Search folders"
+                                    isRequired
                                 >
                                     {(item) => (
                                         <Select.Item id={item.id} supportingText={item.supportingText}>

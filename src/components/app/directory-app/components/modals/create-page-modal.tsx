@@ -85,36 +85,42 @@ export const CreatePageModal = ({
                                 <EmojiPickerField
                                     value={form.emoji}
                                     onChange={(emoji) => onFormChange({ ...form, emoji })}
+                                    isRequired
                                 />
                                 <Input
                                     label="Page name"
                                     value={form.name}
                                     onChange={handleNameChange}
                                     placeholder="e.g. Intake form"
+                                    isRequired
                                 />
                                 <Input
                                     label="Slug"
                                     value={form.slug}
                                     onChange={handleSlugChange}
                                     placeholder="auto-generated"
+                                    isRequired
                                 />
                                 <Input
                                     label="Iframe URL"
                                     value={form.iframeUrl}
                                     onChange={(value) => onFormChange({ ...form, iframeUrl: value })}
                                     placeholder="https://..."
+                                    isRequired
                                 />
                                 <TextArea
                                     label="Description"
                                     value={form.description}
                                     onChange={(value) => onFormChange({ ...form, description: value })}
-                                    placeholder="Optional"
+                                    placeholder="Describe what this page is for"
+                                    isRequired
                                 />
                                 <MultiSelect
                                     label="Visible to departments"
                                     items={departmentItems}
                                     selectedItems={pageDepartments}
                                     placeholder="Search departments"
+                                    isRequired
                                 >
                                     {(item) => <MultiSelect.Item id={item.id}>{item.label}</MultiSelect.Item>}
                                 </MultiSelect>
@@ -124,6 +130,7 @@ export const CreatePageModal = ({
                                     selectedItems={pagePlacements}
                                     placeholder="Pick folders"
                                     onItemInserted={onFolderSelected}
+                                    isRequired
                                 >
                                     {(item) => (
                                         <MultiSelect.Item id={item.id} label={item.label} supportingText={item.supportingText} />

@@ -8,9 +8,10 @@ type EmojiPickerFieldProps = {
     value: string;
     onChange: (emoji: string) => void;
     label?: string;
+    isRequired?: boolean;
 };
 
-export const EmojiPickerField = ({ value, onChange, label = "Icon" }: EmojiPickerFieldProps) => {
+export const EmojiPickerField = ({ value, onChange, label = "Icon", isRequired }: EmojiPickerFieldProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const pickerRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
@@ -48,7 +49,10 @@ export const EmojiPickerField = ({ value, onChange, label = "Icon" }: EmojiPicke
 
     return (
         <div className="relative">
-            <label className="mb-1.5 block text-sm font-medium text-secondary">{label}</label>
+            <label className="mb-1.5 block text-sm font-medium text-secondary">
+                {label}
+                {isRequired && <span className="text-fg-error_primary"> *</span>}
+            </label>
             <div className="flex items-center gap-2">
                 <button
                     ref={buttonRef}

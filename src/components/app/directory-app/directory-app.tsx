@@ -178,10 +178,14 @@ export const DirectoryApp = ({
                     });
                     replaceSelectedItems(
                         pageDepartments,
-                        activeFrame.department_ids.map((id) => ({
-                            id,
-                            label: departments.find((dept) => dept.id === id)?.name ?? id,
-                        })),
+                        activeFrame.department_ids.map((id) => {
+                            const deptItem = departmentItems.find((d) => d.id === id);
+                            return {
+                                id,
+                                label: deptItem?.label ?? id,
+                                icon: deptItem?.icon,
+                            };
+                        }),
                     );
                     // Query ALL placements for this frame (across all departments)
                     const allPlacements = await supabaseFetch<{ parent_id: string | null }[]>(
@@ -192,10 +196,14 @@ export const DirectoryApp = ({
                         .map((entry) => entry.parent_id);
                     replaceSelectedItems(
                         pagePlacements,
-                        placements.map((id) => ({
-                            id,
-                            label: allFoldersById.get(id)?.name ?? id,
-                        })),
+                        placements.map((id) => {
+                            const folder = allFoldersById.get(id);
+                            return {
+                                id,
+                                label: folder?.name ?? id,
+                                emoji: folder?.emoji ?? undefined,
+                            };
+                        }),
                     );
                     setEditPageOpen(true);
                 };
@@ -605,7 +613,7 @@ export const DirectoryApp = ({
                 )}
 
                 {/* Content */}
-                <section className={`flex min-h-0 flex-1 flex-col overflow-hidden ${activeFrame ? "" : "px-6 pb-8"}`}>
+                <section className={`flex min-h-0 flex-1 flex-col overflow-hidden ${activeFrame ? "" : "pb-8"}`}>
                     {error && (
                         <div className="mb-4 rounded-lg border border-error_subtle bg-error_primary/10 px-4 py-3 text-sm text-error_primary">
                             {error}
