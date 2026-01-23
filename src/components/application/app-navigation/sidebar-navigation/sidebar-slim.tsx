@@ -118,7 +118,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                     hideBorder && !isSecondarySidebarVisible && "ring-transparent",
                 )}
             >
-                <div className={cx("flex items-center", isCollapsed ? "px-2.5" : "gap-2 px-2")}>
+                <div className={cx("flex items-center", isCollapsed ? "justify-center px-2" : "gap-2 px-2")}>
                     <a href="/" className="cursor-pointer flex items-center gap-2">
                         <img src="/sqd-badge.png" alt="Squad Logo" className="w-7" />
                         {!isCollapsed && <span className="text-md font-semibold text-primary whitespace-nowrap">Squad Hub</span>}
@@ -133,7 +133,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
 
                         if (isCollapsed) {
                             return (
-                                <li key={item.label} title={item.label}>
+                                <li key={item.label} title={item.label} className="flex justify-center">
                                     <AriaLink
                                         href={hrefWithParams!}
                                         className={cx(
@@ -175,7 +175,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
 
                                 if (isCollapsed) {
                                     return (
-                                        <li key={item.label} title={item.label}>
+                                        <li key={item.label} title={item.label} className="flex justify-center">
                                             <AriaLink
                                                 href={hrefWithParams!}
                                                 className={cx(
@@ -209,7 +209,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                         </ul>
                     )}
 
-                    <div onMouseEnter={handleFavoritesHover} title={isCollapsed ? "Favorites" : undefined}>
+                    <div onMouseEnter={handleFavoritesHover} title={isCollapsed ? "Favorites" : undefined} className={cx(isCollapsed && "flex justify-center")}>
                         {isCollapsed ? (
                             <AriaLink
                                 href={appendUrlParams("/favorites")}
@@ -236,14 +236,16 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
 
                     {onSearchClick && (
                         isCollapsed ? (
-                            <button
-                                type="button"
-                                onClick={onSearchClick}
-                                className="flex size-8 items-center justify-center rounded-md text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary"
-                                title="Search (⌘K)"
-                            >
-                                <SearchLg className="size-5" />
-                            </button>
+                            <div className="flex justify-center">
+                                <button
+                                    type="button"
+                                    onClick={onSearchClick}
+                                    className="flex size-8 items-center justify-center rounded-md text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary"
+                                    title="Search (⌘K)"
+                                >
+                                    <SearchLg className="size-5" />
+                                </button>
+                            </div>
                         ) : (
                             <button
                                 type="button"
