@@ -74,7 +74,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                 )}
             >
                 <div className="flex justify-center px-3">
-                    <a href="/">
+                    <a href="/" className="cursor-pointer">
                         <img src="/sqd-badge.png" alt="Squad Logo" className="w-16" />
                     </a>
                 </div>
@@ -119,7 +119,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                     <a
                         href={appendUrlParams("/favorites")}
                         className={cx(
-                            "flex size-10 items-center justify-center rounded-lg text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary",
+                            "flex cursor-pointer size-10 items-center justify-center rounded-lg text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary",
                             activeUrl === "/favorites" && "bg-active text-fg-quaternary_hover"
                         )}
                         title="Favorites"
@@ -131,7 +131,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                         <button
                             type="button"
                             onClick={onSearchClick}
-                            className="flex size-10 items-center justify-center rounded-lg text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary"
+                            className="flex cursor-pointer size-10 items-center justify-center rounded-lg text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary"
                             title="Search (⌘K)"
                         >
                             <SearchLg className="size-5" />
@@ -141,7 +141,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                     <AriaDialogTrigger>
                         <AriaButton
                             className={({ isPressed, isFocused }) =>
-                                cx("group relative inline-flex rounded-full", (isPressed || isFocused) && "outline-2 outline-offset-2 outline-focus-ring")
+                                cx("group relative inline-flex cursor-pointer rounded-full", (isPressed || isFocused) && "outline-2 outline-offset-2 outline-focus-ring")
                             }
                         >
                             <Avatar initials={initials} size="md" alt={displayName} />

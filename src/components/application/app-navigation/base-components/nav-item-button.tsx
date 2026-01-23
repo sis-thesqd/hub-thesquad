@@ -211,7 +211,7 @@ export const NavItemButton = ({
                                     <Link
                                         key={page.id}
                                         href={pageHref}
-                                        className="block px-1.5 py-px outline-hidden"
+                                        className="block cursor-pointer px-1.5 py-px outline-hidden"
                                     >
                                         <div className="flex items-center rounded-md px-2.5 py-2 transition duration-100 ease-linear hover:bg-primary_hover">
                                             {page.emoji ? (
@@ -242,7 +242,7 @@ export const NavItemButton = ({
                             <div key={folder.id}>
                                 <Link
                                     href={folderHref}
-                                    className="block px-1.5 py-px outline-hidden"
+                                    className="block cursor-pointer px-1.5 py-px outline-hidden"
                                 >
                                     <div className="flex items-center rounded-md px-2.5 py-2 transition duration-100 ease-linear hover:bg-primary_hover">
                                         {folder.emoji ? (
@@ -268,7 +268,7 @@ export const NavItemButton = ({
                                                 <Link
                                                     key={page.id}
                                                     href={pageHref}
-                                                    className="block px-1.5 py-px outline-hidden"
+                                                    className="block cursor-pointer px-1.5 py-px outline-hidden"
                                                 >
                                                     <div className="flex items-center rounded-md px-2.5 py-2 transition duration-100 ease-linear hover:bg-primary_hover">
                                                         {page.emoji ? (
