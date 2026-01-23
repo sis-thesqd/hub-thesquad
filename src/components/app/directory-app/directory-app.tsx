@@ -41,6 +41,7 @@ import {
     CreatePageModal,
     EditPageModal,
     InlineFolderModal,
+    ConfirmDeleteModal,
 } from "./components";
 
 export const DirectoryApp = ({
@@ -111,6 +112,11 @@ export const DirectoryApp = ({
     const [inlineFolderOpen, setInlineFolderOpen] = useState(false);
     const [inlineFolderForm, setInlineFolderForm] = useState<FormState>(emptyForm);
     const [inlineFolderLocation, setInlineFolderLocation] = useState<string>("");
+
+    // Delete confirmation modal state
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<{ type: "folder" | "page"; item: DirectoryEntry | Frame } | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [folderForm, setFolderForm] = useState<FormState>(emptyForm);
     const [pageForm, setPageForm] = useState<FormState>(emptyForm);
@@ -611,57 +617,75 @@ export const DirectoryApp = ({
         invalidateEntriesAndFrames();
     };
 
-    const handleDeleteFolder = async (entry: DirectoryEntry) => {
-        if (!window.confirm(`Are you sure you want to delete "${entry.name}"? This will also delete all contents inside.`)) {
-            return;
-        }
+    const handleDeleteFolder = (entry: DirectoryEntry) => {
+        setDeleteTarget({ type: "folder", item: entry });
+        setDeleteConfirmOpen(true);
+    };
 
-        const result = await deleteEntryAction(entry.id);
-        if (!result.success) {
-            setError(result.error ?? "Failed to delete folder");
-            return;
-        }
+    const handleDeletePage = (frame: Frame) => {
+        setDeleteTarget({ type: "page", item: frame });
+        setDeleteConfirmOpen(true);
+    };
 
-        setEditFolderOpen(false);
-        invalidateEntriesAndFrames();
-        // Navigate back to parent or department root
-        if (entry.parent_id) {
-            const parent = entriesById.get(entry.parent_id);
-            if (parent) {
-                const parentPath = pathById.get(parent.id) ?? [parent.slug];
-                router.push(appendUrlParams(`/${entry.department_id}/${parentPath.join("/")}`));
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+
+        setIsDeleting(true);
+
+        if (deleteTarget.type === "folder") {
+            const entry = deleteTarget.item as DirectoryEntry;
+            const result = await deleteEntryAction(entry.id);
+            if (!result.success) {
+                setError(result.error ?? "Failed to delete folder");
+                setIsDeleting(false);
+                return;
+            }
+
+            setDeleteConfirmOpen(false);
+            setEditFolderOpen(false);
+            setDeleteTarget(null);
+            setIsDeleting(false);
+            invalidateEntriesAndFrames();
+
+            // Navigate back to parent or department root
+            if (entry.parent_id) {
+                const parent = entriesById.get(entry.parent_id);
+                if (parent) {
+                    const parentPath = pathById.get(parent.id) ?? [parent.slug];
+                    router.push(appendUrlParams(`/${entry.department_id}/${parentPath.join("/")}`));
+                } else {
+                    router.push(appendUrlParams(`/${entry.department_id}`));
+                }
             } else {
                 router.push(appendUrlParams(`/${entry.department_id}`));
             }
         } else {
-            router.push(appendUrlParams(`/${entry.department_id}`));
-        }
-    };
+            const frame = deleteTarget.item as Frame;
+            const result = await deletePageAction(frame.id);
+            if (!result.success) {
+                setError(result.error ?? "Failed to delete page");
+                setIsDeleting(false);
+                return;
+            }
 
-    const handleDeletePage = async (frame: Frame) => {
-        if (!window.confirm(`Are you sure you want to delete "${frame.name}"? This cannot be undone.`)) {
-            return;
-        }
+            setDeleteConfirmOpen(false);
+            setEditPageOpen(false);
+            setDeleteTarget(null);
+            setIsDeleting(false);
+            invalidateEntriesAndFrames();
 
-        const result = await deletePageAction(frame.id);
-        if (!result.success) {
-            setError(result.error ?? "Failed to delete page");
-            return;
-        }
-
-        setEditPageOpen(false);
-        invalidateEntriesAndFrames();
-        // Navigate back to parent folder or department root
-        if (activeEntry?.parent_id) {
-            const parent = entriesById.get(activeEntry.parent_id);
-            if (parent) {
-                const parentPath = pathById.get(parent.id) ?? [parent.slug];
-                router.push(appendUrlParams(`/${activeEntry.department_id}/${parentPath.join("/")}`));
-            } else {
+            // Navigate back to parent folder or department root
+            if (activeEntry?.parent_id) {
+                const parent = entriesById.get(activeEntry.parent_id);
+                if (parent) {
+                    const parentPath = pathById.get(parent.id) ?? [parent.slug];
+                    router.push(appendUrlParams(`/${activeEntry.department_id}/${parentPath.join("/")}`));
+                } else {
+                    router.push(appendUrlParams(`/${activeEntry.department_id}`));
+                }
+            } else if (activeEntry) {
                 router.push(appendUrlParams(`/${activeEntry.department_id}`));
             }
-        } else if (activeEntry) {
-            router.push(appendUrlParams(`/${activeEntry.department_id}`));
         }
     };
 
@@ -876,6 +900,19 @@ export const DirectoryApp = ({
                 location={inlineFolderLocation}
                 onLocationChange={setInlineFolderLocation}
                 onSubmit={handleInlineFolderCreate}
+            />
+
+            <ConfirmDeleteModal
+                isOpen={deleteConfirmOpen}
+                onOpenChange={setDeleteConfirmOpen}
+                title={deleteTarget?.type === "folder" ? "Confirm delete folder" : "Confirm delete page"}
+                description={
+                    deleteTarget?.type === "folder"
+                        ? `This will also delete all contents inside.`
+                        : `This cannot be undone.`
+                }
+                onConfirm={confirmDelete}
+                isLoading={isDeleting}
             />
         </div>
     );
