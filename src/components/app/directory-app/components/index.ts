@@ -8,4 +8,5 @@ export { EmbeddedHeaderContent } from "./embedded-header-content";
 export { EmbeddedFolderHeader } from "./embedded-folder-header";
 export { IframeView } from "./iframe-view";
 export { DirectoryCommandMenu } from "./directory-command-menu";
+export { ExternalPagesLink } from "./external-pages-link";
 export * from "./modals";

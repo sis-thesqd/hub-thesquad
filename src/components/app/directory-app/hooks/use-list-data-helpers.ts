@@ -2,6 +2,8 @@ import { useCallback } from "react";
 import type { SelectItemType } from "@/components/base/select/select";
 import { useListData } from "react-stately";
 
+export type UseListDataHelpersReturn = ReturnType<typeof useListDataHelpers>;
+
 export const useListDataHelpers = () => {
     const pageDepartments = useListData<SelectItemType>({
         initialItems: [],

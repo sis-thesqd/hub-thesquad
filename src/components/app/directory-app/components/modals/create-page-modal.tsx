@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import type { FC, HTMLAttributes } from "react";
 import { X } from "@untitledui/icons";
 
@@ -15,7 +15,7 @@ import type { FormState } from "../../types";
 import { useListData } from "react-stately";
 import { EmojiPickerField } from "../emoji-picker-field";
 import { slugify } from "../../utils";
-import { getRandomEmoji } from "../../constants";
+import { useRandomEmoji } from "../../hooks/use-random-emoji";
 
 type FolderOption = {
     id: string;
@@ -55,15 +55,17 @@ export const CreatePageModal = ({
     onSubmit,
 }: CreatePageModalProps) => {
     const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+    const { fetchRandomEmoji } = useRandomEmoji();
+    const formRef = useRef(form);
+    formRef.current = form;
 
-    // Reset manual edit flag and set random emoji when modal opens
+    // Fetch random emoji when modal opens
     useEffect(() => {
         if (isOpen) {
             setSlugManuallyEdited(false);
-            // Set random emoji if not already set
-            if (!form.emoji) {
-                onFormChange({ ...form, emoji: getRandomEmoji() });
-            }
+            fetchRandomEmoji().then((emoji) => {
+                onFormChange({ ...formRef.current, emoji });
+            });
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
