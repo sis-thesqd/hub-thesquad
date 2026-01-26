@@ -29,7 +29,7 @@ export function useDirectoryQueries() {
     const query = useQuery({
         queryKey: directoryKeys.combined(),
         queryFn: fetchDirectoryData,
-        staleTime: 1 * 60 * 1000, // 1 minute
+        staleTime: 5 * 60 * 1000, // 5 minutes
     });
 
     return {
@@ -74,7 +74,7 @@ export function usePrefetchDirectory() {
             queryClient.prefetchQuery({
                 queryKey: directoryKeys.combined(),
                 queryFn: fetchDirectoryData,
-                staleTime: 1 * 60 * 1000,
+                staleTime: 5 * 60 * 1000,
             });
         },
     };

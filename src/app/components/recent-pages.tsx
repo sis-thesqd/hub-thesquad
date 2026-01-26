@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { FileCode01, Star01 } from "@untitledui/icons";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
+import { buildPathToRoot, createEntriesMap } from "@/utils/directory/build-path";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
 
 interface RecentPagesProps {
@@ -13,33 +14,12 @@ interface RecentPagesProps {
     favoriteEntryIds?: string[];
 }
 
-// Build path segments from entry to root
-const buildPathToRoot = (
-    entriesById: Map<string, DirectoryEntry>,
-    entry: DirectoryEntry
-): string[] => {
-    const pathParts: string[] = [entry.slug];
-    let currentParentId = entry.parent_id;
-
-    while (currentParentId) {
-        const parent = entriesById.get(currentParentId);
-        if (parent) {
-            pathParts.unshift(parent.slug);
-            currentParentId = parent.parent_id;
-        } else {
-            break;
-        }
-    }
-
-    return pathParts;
-};
-
 export const RecentPages = ({ entries, frames, userDepartmentId, favoriteEntryIds = [] }: RecentPagesProps) => {
     const appendUrlParams = useAppendUrlParams();
 
     const recentPages = useMemo(() => {
         // Create a lookup map for entries
-        const entriesById = new Map(entries.map((e) => [e.id, e]));
+        const entriesById = createEntriesMap(entries);
 
         // Filter frames by user's department visibility
         const visibleFrames = frames.filter((frame) => {

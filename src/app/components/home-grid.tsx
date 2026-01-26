@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Star01 } from "@untitledui/icons";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { Badge } from "@/components/base/badges/badges";
+import { slugify } from "@/utils/slugify";
 import type { DirectoryEntry, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 import { cx } from "@/utils/cx";
@@ -40,14 +41,7 @@ export const HomeGrid = ({ departments, navigationPages, entries, userDepartment
     // Map navigation pages to departments
     const items = navigationPages.map((page) => {
         // Find matching department by comparing slugified name
-        const department = departments.find((dept) => {
-            const deptSlug = dept.name
-                ?.toLowerCase()
-                .trim()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/(^-|-$)+/g, "");
-            return deptSlug === page.slug;
-        });
+        const department = departments.find((dept) => slugify(dept.name) === page.slug);
 
         const counts = department ? countsByDepartment[department.id] : null;
 

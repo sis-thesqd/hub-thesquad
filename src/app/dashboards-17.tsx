@@ -13,6 +13,8 @@ import { emptyForm, getRandomEmoji } from "@/components/app/directory-app/consta
 import type { FormState, ActiveEntryInfo } from "@/components/app/directory-app/types";
 import type { Frame } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
+import { slugify } from "@/utils/slugify";
+import { buildPathToRoot, createEntriesMap } from "@/utils/directory/build-path";
 import { createFolder, createPage } from "@/app/api/directory/actions";
 import { useAuth } from "@/providers/auth-provider";
 import { useAppendUrlParams, useUrlParams } from "@/hooks/use-url-params";
@@ -82,14 +84,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
 
     const departmentItems = useMemo(() => {
         return navigationPages.map((page) => {
-            const department = departments.find((dept) => {
-                const deptSlug = dept.name
-                    ?.toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/(^-|-$)+/g, "");
-                return deptSlug === page.slug;
-            });
+            const department = departments.find((dept) => slugify(dept.name) === page.slug);
 
             return {
                 label: page.title,
@@ -102,11 +97,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     // Department items with icons for modals
     const homeDepartmentItems = useMemo(() => {
         return departments.map((dept) => {
-            const deptSlug = dept.name
-                ?.toLowerCase()
-                .trim()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/(^-|-$)+/g, "");
+            const deptSlug = slugify(dept.name);
             const navPage = navigationPages.find((page) => page.slug === deptSlug);
             const Icon = navPage ? getIconByName(navPage.icon, FolderClosed) : FolderClosed;
 
@@ -213,6 +204,17 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
         }
     }, [homeFolderForm, homePagePlacements.items, worker, departments, entries, invalidateEntriesAndFrames]);
 
+    const handleHomeFolderSelected = useCallback((key: string | number) => {
+        if (key === "__create_new__") {
+            // Remove the "__create_new__" item from placements
+            homePagePlacements.remove("__create_new__");
+            // Open the create folder modal with a random emoji
+            setHomeFolderForm({ ...emptyForm, emoji: getRandomEmoji() });
+            setHomeFolderParentId(null);
+            setHomeCreateFolderOpen(true);
+        }
+    }, [homePagePlacements]);
+
     const handleHomeCreatePage = useCallback(async () => {
         if (!homePageForm.name || !homePageForm.iframeUrl || homePageDepartments.items.length === 0 || homePagePlacements.items.length === 0) return;
 
@@ -266,43 +268,24 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     }, [homePageForm, homePageDepartments.items, homePagePlacements.items, entries, invalidateEntriesAndFrames]);
 
     const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
+        const entriesById = createEntriesMap(entries);
+
         if (type === "department") {
             router.push(appendUrlParams(`/${id}`));
         } else if (type === "folder") {
-            const folder = entries.find((e) => e.id === id);
+            const folder = entriesById.get(id);
             if (folder) {
-                const pathParts: string[] = [folder.slug];
-                let currentParentId = folder.parent_id;
-                while (currentParentId) {
-                    const parent = entries.find((e) => e.id === currentParentId);
-                    if (parent) {
-                        pathParts.unshift(parent.slug);
-                        currentParentId = parent.parent_id;
-                    } else {
-                        break;
-                    }
-                }
+                const pathParts = buildPathToRoot(entriesById, folder);
                 router.push(appendUrlParams(`/${folder.department_id}/${pathParts.join("/")}`));
             }
         } else if (type === "page") {
-            const frame = frames.find((f) => f.id === id);
             const entry = entries.find((e) => e.frame_id === id);
-            if (frame && entry) {
-                const pathParts: string[] = [entry.slug];
-                let currentParentId = entry.parent_id;
-                while (currentParentId) {
-                    const parent = entries.find((e) => e.id === currentParentId);
-                    if (parent) {
-                        pathParts.unshift(parent.slug);
-                        currentParentId = parent.parent_id;
-                    } else {
-                        break;
-                    }
-                }
+            if (entry) {
+                const pathParts = buildPathToRoot(entriesById, entry);
                 router.push(appendUrlParams(`/${entry.department_id}/${pathParts.join("/")}`));
             }
         }
-    }, [appendUrlParams, entries, frames, router]);
+    }, [appendUrlParams, entries, router]);
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
@@ -361,7 +344,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                 pageDepartments={homePageDepartments}
                 folderOptions={homeFolderOptions}
                 pagePlacements={homePagePlacements}
-                onFolderSelected={() => {}}
+                onFolderSelected={handleHomeFolderSelected}
                 onSubmit={handleHomeCreatePage}
             />
 

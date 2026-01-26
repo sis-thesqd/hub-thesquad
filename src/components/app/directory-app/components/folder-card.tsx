@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { Folder, Star01 } from "@untitledui/icons";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
@@ -14,7 +15,7 @@ type FolderCardProps = {
     onToggleFavorite?: () => void;
 };
 
-export const FolderCard = ({ entry, path, childCount, isFavorite = false, onToggleFavorite }: FolderCardProps) => {
+const FolderCardBase = ({ entry, path, childCount, isFavorite = false, onToggleFavorite }: FolderCardProps) => {
     const appendUrlParams = useAppendUrlParams();
     const basePath = `/${entry.department_id}/${path.join("/")}`;
     const href = appendUrlParams(basePath);
@@ -48,3 +49,5 @@ export const FolderCard = ({ entry, path, childCount, isFavorite = false, onTogg
         </Link>
     );
 };
+
+export const FolderCard = memo(FolderCardBase);

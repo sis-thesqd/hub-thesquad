@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { FileCode01, Star01 } from "@untitledui/icons";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
@@ -14,7 +15,7 @@ type PageCardProps = {
     onToggleFavorite?: () => void;
 };
 
-export const PageCard = ({ entry, path, frame, isFavorite = false, onToggleFavorite }: PageCardProps) => {
+const PageCardBase = ({ entry, path, frame, isFavorite = false, onToggleFavorite }: PageCardProps) => {
     const appendUrlParams = useAppendUrlParams();
     const basePath = `/${entry.department_id}/${path.join("/")}`;
     const href = appendUrlParams(basePath);
@@ -50,3 +51,5 @@ export const PageCard = ({ entry, path, frame, isFavorite = false, onToggleFavor
         </Link>
     );
 };
+
+export const PageCard = memo(PageCardBase);

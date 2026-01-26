@@ -76,7 +76,7 @@ interface AuthProviderProps {
 }
 
 // Dev mode email for localhost bypass
-const DEV_EMAIL = "jacob@churchmediasquad.com";
+const DEV_EMAIL = process.env.NEXT_PUBLIC_DEV_EMAIL || "jacob@churchmediasquad.com";
 
 // Check if running on localhost
 const isLocalhost = () => {

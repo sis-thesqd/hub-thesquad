@@ -78,7 +78,7 @@ const ICON_OPTIONS: SelectItemType[] = ALL_ICON_NAMES.map(iconName => ({
     label: iconName,
 }));
 
-const SIS_DEPARTMENT_ID = "6932e7d2edd1d2e954e4264d"; // Systems Integration Squad
+const SIS_DEPARTMENT_ID = process.env.NEXT_PUBLIC_SIS_DEPARTMENT_ID || "6932e7d2edd1d2e954e4264d"; // Systems Integration Squad
 
 export const SettingsPage = () => {
     const router = useRouter();

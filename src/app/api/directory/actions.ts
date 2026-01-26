@@ -11,7 +11,7 @@ async function isLocalhost(): Promise<boolean> {
     return host.startsWith("localhost") || host.startsWith("127.0.0.1");
 }
 
-const DEV_EMAIL = "jacob@churchmediasquad.com";
+const DEV_EMAIL = process.env.DEV_EMAIL || "jacob@churchmediasquad.com";
 
 // Get authenticated user email
 async function getAuthenticatedEmail(): Promise<string | null> {

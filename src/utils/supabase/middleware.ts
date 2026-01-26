@@ -49,7 +49,9 @@ export const updateSession = async (request: NextRequest) => {
         data: { user },
     } = await supabase.auth.getUser();
 
-    console.log("[Middleware]", request.nextUrl.pathname, "- User:", user?.email || "none");
+    if (process.env.NODE_ENV === "development") {
+        console.log("[Middleware]", request.nextUrl.pathname, "- User:", user?.email || "none");
+    }
 
     // Define public routes that don't require authentication
     const publicRoutes = ["/login", "/auth/callback", "/auth/verify", "/clear-cache"];
@@ -59,7 +61,9 @@ export const updateSession = async (request: NextRequest) => {
 
     // If user is not authenticated and trying to access protected route
     if (!user && !isPublicRoute) {
-        console.log("[Middleware] Redirecting to login - no user found");
+        if (process.env.NODE_ENV === "development") {
+            console.log("[Middleware] Redirecting to login - no user found");
+        }
         const url = request.nextUrl.clone();
         url.pathname = "/login";
         return NextResponse.redirect(url);

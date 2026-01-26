@@ -8,6 +8,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import type { CommandDropdownMenuItemProps } from "@/components/application/command-menus/base-components/command-menu-item";
 import { CommandMenu } from "@/components/application/command-menus/command-menu";
 import { EmptyState } from "@/components/application/empty-state/empty-state";
+import { slugify } from "@/utils/slugify";
 import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 
@@ -40,11 +41,7 @@ export const DirectoryCommandMenu = ({
         // Departments group - use icons from navigationPages like home page
         const departmentItems: CommandDropdownMenuItemProps[] = departments.map((dept) => {
             // Match department with navigation page by slug (same as HomeGrid)
-            const deptSlug = dept.name
-                ?.toLowerCase()
-                .trim()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/(^-|-$)+/g, "");
+            const deptSlug = slugify(dept.name);
             const navPage = navigationPages.find((page) => page.slug === deptSlug);
             const icon = navPage ? getIconByName(navPage.icon, FolderClosed) : FolderClosed;
 

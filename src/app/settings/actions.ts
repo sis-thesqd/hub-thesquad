@@ -4,8 +4,8 @@ import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import type { NavigationPage } from "@/utils/supabase/types";
 
-const SIS_DEPARTMENT_ID = "6932e7d2edd1d2e954e4264d"; // Systems Integration Squad
-const DEV_EMAIL = "jacob@churchmediasquad.com";
+const SIS_DEPARTMENT_ID = process.env.SIS_DEPARTMENT_ID || "6932e7d2edd1d2e954e4264d"; // Systems Integration Squad
+const DEV_EMAIL = process.env.DEV_EMAIL || "jacob@churchmediasquad.com";
 
 // Check if running on localhost
 async function isLocalhost(): Promise<boolean> {

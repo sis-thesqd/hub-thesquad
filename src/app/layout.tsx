@@ -5,6 +5,7 @@ import { RouteProvider } from "@/providers/router-provider";
 import { AuthProvider } from "@/providers/auth-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { Theme } from "@/providers/theme";
+import { ErrorBoundary } from "@/components/error-boundary";
 import "@/styles/globals.css";
 import { cx } from "@/utils/cx";
 
@@ -35,7 +36,9 @@ export default function RootLayout({
                 <RouteProvider>
                     <QueryProvider>
                         <Theme>
-                            <AuthProvider>{children}</AuthProvider>
+                            <ErrorBoundary>
+                                <AuthProvider>{children}</AuthProvider>
+                            </ErrorBoundary>
                             <Toaster position="bottom-right" />
                         </Theme>
                     </QueryProvider>

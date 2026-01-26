@@ -1,8 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import EmojiPicker, { Theme, type EmojiClickData } from "emoji-picker-react";
+import dynamic from "next/dynamic";
+import { Theme, type EmojiClickData } from "emoji-picker-react";
 import { FaceSmile, X } from "@untitledui/icons";
+import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
+
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
+    ssr: false,
+    loading: () => (
+        <div className="flex h-[400px] w-[350px] items-center justify-center rounded-lg border border-secondary_alt bg-primary">
+            <LoadingIndicator type="line-simple" size="md" />
+        </div>
+    ),
+});
 
 type EmojiPickerFieldProps = {
     value: string;

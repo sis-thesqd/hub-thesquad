@@ -7,6 +7,8 @@ import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { FolderCard, PageCard } from "@/components/app/directory-app/components";
 import { EmptyState } from "@/components/application/empty-state/empty-state";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
+import { buildPathToRoot, createEntriesMap } from "@/utils/directory/build-path";
+import { slugify } from "@/utils/slugify";
 import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment, ShFavorite } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 import { cx } from "@/utils/cx";
@@ -23,27 +25,6 @@ interface FavoritesViewProps {
     hasLoaded?: boolean;
 }
 
-// Build path segments from entry to root
-const buildPathToRoot = (
-    entriesById: Map<string, DirectoryEntry>,
-    entry: DirectoryEntry
-): string[] => {
-    const pathParts: string[] = [entry.slug];
-    let currentParentId = entry.parent_id;
-
-    while (currentParentId) {
-        const parent = entriesById.get(currentParentId);
-        if (parent) {
-            pathParts.unshift(parent.slug);
-            currentParentId = parent.parent_id;
-        } else {
-            break;
-        }
-    }
-
-    return pathParts;
-};
-
 export const FavoritesView = ({
     favorites,
     entries,
@@ -57,7 +38,7 @@ export const FavoritesView = ({
     const appendUrlParams = useAppendUrlParams();
 
     const { favoriteDepartments, favoriteFolders, favoritePages } = useMemo(() => {
-        const entriesById = new Map(entries.map((e) => [e.id, e]));
+        const entriesById = createEntriesMap(entries);
         const framesById = new Map(frames.map((f) => [f.id, f]));
 
         const deptFavorites: Array<{
@@ -80,11 +61,7 @@ export const FavoritesView = ({
             if (fav.department_id) {
                 const dept = departments.find((d) => d.id === fav.department_id);
                 if (dept) {
-                    const deptSlug = dept.name
-                        ?.toLowerCase()
-                        .trim()
-                        .replace(/[^a-z0-9]+/g, "-")
-                        .replace(/(^-|-$)+/g, "");
+                    const deptSlug = slugify(dept.name);
                     const navPage = navigationPages.find((p) => p.slug === deptSlug);
                     deptFavorites.push({ id: fav.department_id, department: dept, navPage });
                 }
