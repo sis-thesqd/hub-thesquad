@@ -37,12 +37,16 @@ const ComboboxContext = createContext<{
     selectedItems: ListData<SelectItemType>;
     onRemove: (keys: Set<Key>) => void;
     onInputChange: (value: string) => void;
+    onClearAll: () => void;
+    showClearAll: boolean;
 }>({
     size: "sm",
     selectedKeys: [],
     selectedItems: {} as ListData<SelectItemType>,
     onRemove: () => {},
     onInputChange: () => {},
+    onClearAll: () => {},
+    showClearAll: false,
 });
 
 interface MultiSelectProps extends Omit<AriaComboBoxProps<SelectItemType>, "children" | "items">, RefAttributes<HTMLDivElement> {
@@ -60,6 +64,8 @@ interface MultiSelectProps extends Omit<AriaComboBoxProps<SelectItemType>, "chil
     children: AriaListBoxProps<SelectItemType>["children"];
     onItemCleared?: (key: Key) => void;
     onItemInserted?: (key: Key) => void;
+    /** Show a "Clear all" button when there are 2+ selected items */
+    showClearAll?: boolean;
 }
 
 export const MultiSelectBase = ({
@@ -71,6 +77,7 @@ export const MultiSelectBase = ({
     onItemInserted,
     shortcut,
     placeholder = "Search",
+    showClearAll = false,
     // Omit these props to avoid conflicts with the `Select` component
     name: _name,
     className: _className,
@@ -138,6 +145,15 @@ export const MultiSelectBase = ({
         [selectedItems, onItemCleared],
     );
 
+    const onClearAll = useCallback(() => {
+        // Remove all items from selectedItems
+        const allKeys = selectedItems.items.map((item) => item.id);
+        allKeys.forEach((key) => {
+            selectedItems.remove(key);
+            onItemCleared?.(key);
+        });
+    }, [selectedItems, onItemCleared]);
+
     const onSelectionChange = (id: Key | null) => {
         if (!id) {
             return;
@@ -185,6 +201,8 @@ export const MultiSelectBase = ({
                 selectedItems,
                 onInputChange,
                 onRemove,
+                onClearAll,
+                showClearAll,
             }}
         >
             <AriaComboBox
@@ -297,6 +315,7 @@ const InnerMultiSelect = ({ isDisabled, shortcut, shortcutClassName, placeholder
     };
 
     const isSelectionEmpty = comboBoxContext?.selectedItems?.items?.length === 0;
+    const showClearAllButton = comboBoxContext?.showClearAll && (comboBoxContext?.selectedItems?.items?.length ?? 0) >= 2;
 
     return (
         <div className="relative flex w-full flex-1 flex-row flex-wrap items-center justify-start gap-1.5">
@@ -330,6 +349,19 @@ const InnerMultiSelect = ({ isDisabled, shortcut, shortcutClassName, placeholder
                         />
                     </span>
                 ))}
+            {showClearAllButton && (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        comboBoxContext.onClearAll();
+                    }}
+                    className="text-xs font-medium text-tertiary transition hover:text-secondary"
+                >
+                    Clear all
+                </button>
+            )}
 
             <div className={cx("relative flex min-w-[20%] flex-1 flex-row items-center", !isSelectionEmpty && "ml-0.5", shortcut && "min-w-[30%]")}>
                 <AriaInput

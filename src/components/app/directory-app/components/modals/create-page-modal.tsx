@@ -157,6 +157,7 @@ export const CreatePageModal = ({
                                     items={departmentItems}
                                     selectedItems={pageDepartments}
                                     placeholder="Search departments"
+                                    showClearAll
                                     isRequired
                                 >
                                     {(item) => <MultiSelect.Item id={item.id}>{item.label}</MultiSelect.Item>}
@@ -167,6 +168,7 @@ export const CreatePageModal = ({
                                     selectedItems={pagePlacements}
                                     placeholder="Pick folders"
                                     onItemInserted={onFolderSelected}
+                                    showClearAll
                                     isRequired
                                 >
                                     {(item) => (
