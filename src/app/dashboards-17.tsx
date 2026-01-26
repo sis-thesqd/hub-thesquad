@@ -64,10 +64,27 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     const [homeFolderForm, setHomeFolderForm] = useState<FormState>(emptyForm);
     const [homePageForm, setHomePageForm] = useState<FormState>(emptyForm);
     const [homeFolderParentId, setHomeFolderParentId] = useState<string | null>(null);
+    // Track newly created folder to add to page placements
+    const [pendingFolderForPlacement, setPendingFolderForPlacement] = useState<{ id: string; name: string; emoji?: string } | null>(null);
 
     // List data for page modal
     const homePageDepartments = useListData<SelectItemType>({ initialItems: [] });
     const homePagePlacements = useListData<SelectItemType>({ initialItems: [] });
+
+    // Effect to add newly created folder to placements when folder modal closes
+    useEffect(() => {
+        if (!homeCreateFolderOpen && pendingFolderForPlacement) {
+            // Clear existing placements and add the new folder
+            const itemsToRemove = [...homePagePlacements.items];
+            itemsToRemove.forEach((item) => homePagePlacements.remove(item.id));
+            homePagePlacements.append({
+                id: pendingFolderForPlacement.id,
+                label: pendingFolderForPlacement.name,
+                emoji: pendingFolderForPlacement.emoji,
+            });
+            setPendingFolderForPlacement(null);
+        }
+    }, [homeCreateFolderOpen, pendingFolderForPlacement, homePagePlacements]);
 
     const isHomePage = !initialDepartmentId && !showFavorites;
     const isFavoritesPage = showFavorites;
@@ -216,17 +233,12 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                 return;
             }
 
-            // Add newly created folder to page placements (if folder was created from page modal context)
+            // Store newly created folder to add to page placements after modal closes
             if (result.data) {
-                const newFolder = result.data;
-                // Remove any existing placements and add the new folder
-                while (homePagePlacements.items.length > 0) {
-                    homePagePlacements.remove(homePagePlacements.items[0].id);
-                }
-                homePagePlacements.append({
-                    id: newFolder.id,
-                    label: newFolder.name,
-                    emoji: newFolder.emoji ?? undefined,
+                setPendingFolderForPlacement({
+                    id: result.data.id,
+                    name: result.data.name,
+                    emoji: result.data.emoji ?? undefined,
                 });
             }
 
