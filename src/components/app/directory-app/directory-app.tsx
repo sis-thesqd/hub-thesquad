@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FolderClosed } from "@untitledui/icons";
+import Link from "next/link";
+import { FolderClosed, Globe02 } from "@untitledui/icons";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { useAuth } from "@/providers/auth-provider";
@@ -26,7 +27,7 @@ import {
 import type { DirectoryAppProps, FormState } from "./types";
 import { emptyForm, getRandomEmoji } from "./constants";
 import { slugify, buildPathSegments } from "./utils";
-import { useDirectoryData, useListDataHelpers } from "./hooks";
+import { useDirectoryData, useListDataHelpers, EXTERNAL_PAGES_SLUG } from "./hooks";
 import {
     FolderCard,
     PageCard,
@@ -86,6 +87,10 @@ export const DirectoryApp = ({
         visibleFolders,
         visiblePages,
         refreshData,
+        hasExternalPages,
+        isExternalPagesView,
+        externalPageEntries,
+        externalPathById,
     } = useDirectoryData({
         initialDepartmentId,
         initialPath,
@@ -347,6 +352,13 @@ export const DirectoryApp = ({
                     emoji: activeEntry?.emoji ?? undefined,
                     isPage: true,
                 });
+            } else if (isExternalPagesView) {
+                // External pages virtual folder
+                onActiveEntryChange({
+                    name: "Pages from Other Departments",
+                    icon: "Globe02",
+                    isPage: false,
+                });
             } else if (activeEntry) {
                 onActiveEntryChange({
                     name: activeEntry.name,
@@ -376,7 +388,7 @@ export const DirectoryApp = ({
                 onActiveEntryChange(null);
             }
         }
-    }, [onActiveEntryChange, activeEntry, activeFrame, selectedDepartmentId, departments, navigationPages]);
+    }, [onActiveEntryChange, activeEntry, activeFrame, selectedDepartmentId, departments, navigationPages, isExternalPagesView]);
 
     const handleCreateFolder = async (parentId: string | null) => {
         if (!selectedDepartmentId) return;
@@ -825,7 +837,7 @@ export const DirectoryApp = ({
                     {!isLoading && !activeFrame && (
                         <>
                             {/* Folders Section */}
-                            {visibleFolders.length > 0 && (
+                            {(visibleFolders.length > 0 || (!activeEntry && hasExternalPages && !isExternalPagesView)) && (
                                 <div className="mb-8">
                                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                         {visibleFolders.map((child) => {
@@ -842,6 +854,23 @@ export const DirectoryApp = ({
                                                 />
                                             );
                                         })}
+                                        {/* External Pages Folder - only shown at top level when there are external pages */}
+                                        {!activeEntry && hasExternalPages && !isExternalPagesView && (
+                                            <Link
+                                                href={appendUrlParams(`/${selectedDepartmentId}/${EXTERNAL_PAGES_SLUG}`)}
+                                                className="group relative flex items-center gap-4 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
+                                            >
+                                                <div className="flex size-12 items-center justify-center rounded-lg bg-secondary">
+                                                    <Globe02 className="size-6 text-fg-tertiary group-hover:text-brand-secondary" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate font-medium text-primary">Pages from Other Departments</p>
+                                                    <p className="mt-0.5 text-xs text-tertiary">
+                                                        {externalPageEntries.length} {externalPageEntries.length === 1 ? "page" : "pages"}
+                                                    </p>
+                                                </div>
+                                            </Link>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -849,12 +878,12 @@ export const DirectoryApp = ({
                             {/* Pages Section */}
                             {visiblePages.length > 0 && (
                                 <div>
-                                    <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-tertiary">
-                                        Pages
-                                    </h2>
                                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                         {visiblePages.map((child) => {
-                                            const path = pathById.get(child.id) ?? [child.slug];
+                                            // Use externalPathById for external pages, pathById for regular pages
+                                            const path = isExternalPagesView
+                                                ? externalPathById.get(child.id) ?? [child.slug]
+                                                : pathById.get(child.id) ?? [child.slug];
                                             const frame = child.frame_id ? frameById.get(child.frame_id) : null;
                                             return (
                                                 <PageCard
@@ -872,7 +901,7 @@ export const DirectoryApp = ({
                             )}
 
                             {/* Empty State */}
-                            {visibleFolders.length === 0 && visiblePages.length === 0 && selectedDepartmentId && (
+                            {visibleFolders.length === 0 && visiblePages.length === 0 && selectedDepartmentId && !isExternalPagesView && !(!activeEntry && hasExternalPages) && (
                                 <EmptyFolderState activeEntry={activeEntry} />
                             )}
 

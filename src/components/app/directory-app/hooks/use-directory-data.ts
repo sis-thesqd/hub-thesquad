@@ -3,6 +3,8 @@ import { useRouter } from "next/navigation";
 import type { DirectoryEntry, Frame, RipplingDepartment } from "@/utils/supabase/types";
 import { buildPathSegments, findEntryByPath } from "../utils";
 
+export const EXTERNAL_PAGES_SLUG = "__external__";
+
 type UseDirectoryDataProps = {
     initialDepartmentId?: string;
     initialPath: string[];
@@ -83,6 +85,24 @@ export const useDirectoryData = ({
         return entries.filter((entry) => !entry.frame_id || visibleFrameIds.has(entry.frame_id));
     }, [entries, visibleFrameIds]);
 
+    // External pages: entries from OTHER departments whose frames are visible to current department
+    const externalPageEntries = useMemo(() => {
+        if (!entriesOverride?.length || !selectedDepartmentId) return [];
+        return entriesOverride.filter((entry) => {
+            // Must be a page (has frame_id)
+            if (!entry.frame_id) return false;
+            // Must be from a different department
+            if (entry.department_id === selectedDepartmentId) return false;
+            // Frame must be visible to current department
+            return visibleFrameIds.has(entry.frame_id);
+        });
+    }, [entriesOverride, selectedDepartmentId, visibleFrameIds]);
+
+    const hasExternalPages = externalPageEntries.length > 0;
+
+    // Check if we're viewing the external pages virtual folder
+    const isExternalPagesView = pathSegments.length === 1 && pathSegments[0] === EXTERNAL_PAGES_SLUG;
+
     const entriesById = useMemo(() => new Map(filteredEntries.map((entry) => [entry.id, entry])), [filteredEntries]);
 
     const childrenByParent = useMemo(() => {
@@ -113,24 +133,46 @@ export const useDirectoryData = ({
         return map;
     }, [allFolders, allFoldersById]);
 
+    // Paths for external page entries (from other departments)
+    const externalPathById = useMemo(() => {
+        const map = new Map<string, string[]>();
+        externalPageEntries.forEach((entry) => {
+            // Build path using allFoldersById which contains folders from all departments
+            const segments: string[] = [entry.slug];
+            let current = entry.parent_id ? allFoldersById.get(entry.parent_id) : null;
+            while (current) {
+                segments.unshift(current.slug);
+                current = current.parent_id ? allFoldersById.get(current.parent_id) : null;
+            }
+            map.set(entry.id, segments);
+        });
+        return map;
+    }, [externalPageEntries, allFoldersById]);
+
     const activeEntry = useMemo(() => {
         if (!pathSegments?.length) return null;
+        // External pages view is a virtual folder, not a real entry
+        if (isExternalPagesView) return null;
         return findEntryByPath(childrenByParent, pathSegments);
-    }, [childrenByParent, pathSegments]);
+    }, [childrenByParent, pathSegments, isExternalPagesView]);
 
     const activeFrame = activeEntry?.frame_id ? frameById.get(activeEntry.frame_id) ?? null : null;
 
     const activeParentId = activeEntry?.frame_id ? activeEntry.parent_id : activeEntry?.id ?? null;
 
     const activeChildren = useMemo(() => {
+        // External pages view shows external page entries
+        if (isExternalPagesView) return externalPageEntries;
         if (!activeEntry) return childrenByParent.get(null) || [];
         if (activeEntry.frame_id) return [];
         return childrenByParent.get(activeEntry.id) || [];
-    }, [activeEntry, childrenByParent]);
+    }, [activeEntry, childrenByParent, isExternalPagesView, externalPageEntries]);
 
     const visibleFolders = useMemo(() => {
+        // External pages view has no folders
+        if (isExternalPagesView) return [];
         return activeChildren.filter((entry) => !entry.frame_id);
-    }, [activeChildren]);
+    }, [activeChildren, isExternalPagesView]);
 
     const visiblePages = useMemo(() => {
         return activeChildren.filter((entry) => entry.frame_id);
@@ -166,5 +208,10 @@ export const useDirectoryData = ({
         visiblePages,
         handleDepartmentSelect,
         refreshData,
+        // External pages support
+        externalPageEntries,
+        hasExternalPages,
+        isExternalPagesView,
+        externalPathById,
     };
 };
