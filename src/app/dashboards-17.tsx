@@ -109,10 +109,24 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
         });
     }, [departments, navigationPages]);
 
-    // Folder options for page modal - all folders across all departments
+    // Folder options for page modal - all folders across all departments + department roots
     const homeFolderOptions = useMemo(() => {
+        // Department root options
+        const departmentRoots = departments.map((dept) => {
+            const deptSlug = slugify(dept.name);
+            const navPage = navigationPages.find((page) => page.slug === deptSlug);
+            const Icon = navPage ? getIconByName(navPage.icon, FolderClosed) : FolderClosed;
+            return {
+                id: `dept-root-${dept.id}`,
+                label: `${dept.name} (Root)`,
+                supportingText: "Top level",
+                icon: Icon,
+            };
+        });
+
+        // Existing folder options
         const folders = entries.filter((e) => !e.frame_id);
-        const options = folders.map((folder) => {
+        const folderOptions = folders.map((folder) => {
             const dept = departments.find((d) => d.id === folder.department_id);
             return {
                 id: folder.id,
@@ -124,9 +138,10 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
 
         return [
             { id: "__create_new__", label: "+ Create new folder" },
-            ...options,
+            ...departmentRoots,
+            ...folderOptions,
         ];
-    }, [entries, departments]);
+    }, [entries, departments, navigationPages]);
 
     // Parent folder options for folder modal - need to select department first
     const homeParentOptions = useMemo(() => {
@@ -168,20 +183,24 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
 
         try {
             // Get the first selected folder placement to determine department
-            const placementId = homePagePlacements.items[0].id;
+            const placementId = homePagePlacements.items[0].id as string;
             let targetDepartmentId: string;
             let parentId: string | null = null;
 
-            if (placementId === "root") {
-                // Need a department - use user's department or first available
+            if (placementId.startsWith("dept-root-")) {
+                // Department root selected - create at root of that department
+                targetDepartmentId = placementId.replace("dept-root-", "");
+                parentId = null;
+            } else if (placementId === "root") {
+                // Generic root - use user's department or first available
                 targetDepartmentId = worker?.department_id || departments[0]?.id;
                 if (!targetDepartmentId) return;
             } else {
-                // Get department from selected folder
+                // Existing folder selected - get department from that folder
                 const parentFolder = entries.find((e) => e.id === placementId);
                 if (!parentFolder) return;
                 targetDepartmentId = parentFolder.department_id;
-                parentId = placementId as string;
+                parentId = placementId;
             }
 
             const result = await createFolder({
@@ -227,7 +246,11 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                 let targetDepartmentId: string;
                 let parentId: string | null = null;
 
-                if (placementId === "root") {
+                if (placementId.startsWith("dept-root-")) {
+                    // Department root selected
+                    targetDepartmentId = placementId.replace("dept-root-", "");
+                    parentId = null;
+                } else if (placementId === "root") {
                     targetDepartmentId = departmentIds[0];
                 } else {
                     const parentFolder = entries.find((e) => e.id === placementId);
@@ -317,18 +340,26 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                 onParentIdChange={(id) => {
                     setHomeFolderParentId(id);
                     // Also add to placements for the submit handler
-                    if (id) {
+                    while (homePagePlacements.items.length > 0) {
+                        homePagePlacements.remove(homePagePlacements.items[0].id);
+                    }
+
+                    if (id?.startsWith("dept-root-")) {
+                        // Department root selected - extract department ID
+                        const deptId = id.replace("dept-root-", "");
+                        const dept = departments.find((d) => d.id === deptId);
+                        homePagePlacements.append({
+                            id,
+                            label: dept ? `${dept.name} (Root)` : "Root",
+                        });
+                    } else if (id) {
+                        // Existing folder selected
                         const folder = entries.find((e) => e.id === id);
                         if (folder) {
-                            while (homePagePlacements.items.length > 0) {
-                                homePagePlacements.remove(homePagePlacements.items[0].id);
-                            }
                             homePagePlacements.append({ id, label: folder.name, emoji: folder.emoji ?? undefined });
                         }
                     } else {
-                        while (homePagePlacements.items.length > 0) {
-                            homePagePlacements.remove(homePagePlacements.items[0].id);
-                        }
+                        // No selection (root fallback)
                         homePagePlacements.append({ id: "root", label: "Top level" });
                     }
                 }}
