@@ -216,6 +216,20 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                 return;
             }
 
+            // Add newly created folder to page placements (if folder was created from page modal context)
+            if (result.data) {
+                const newFolder = result.data;
+                // Remove any existing placements and add the new folder
+                while (homePagePlacements.items.length > 0) {
+                    homePagePlacements.remove(homePagePlacements.items[0].id);
+                }
+                homePagePlacements.append({
+                    id: newFolder.id,
+                    label: newFolder.name,
+                    emoji: newFolder.emoji ?? undefined,
+                });
+            }
+
             invalidateEntriesAndFrames();
             setHomeCreateFolderOpen(false);
         } catch (err) {
