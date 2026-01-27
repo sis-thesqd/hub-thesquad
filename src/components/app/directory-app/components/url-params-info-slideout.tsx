@@ -71,6 +71,7 @@ const isFilloutUrl = (url?: string) => {
 
 const tabs = [
     { id: "url-params", label: "URL Params" },
+    { id: "url-paths", label: "URL Paths" },
     { id: "ai-prompts", label: "AI Prompts" },
 ];
 
@@ -211,6 +212,134 @@ const email = params.get('email');`}</code>
     </div>
 );
 
+const UrlPathsContent = () => (
+    <div className="prose prose-sm max-w-none">
+        <h3 className="text-md font-semibold text-primary">How URL Paths Work</h3>
+        <p className="text-tertiary">
+            URL paths after the page URL are automatically forwarded to your embedded app. This enables deep linking, allowing users to navigate directly to specific views within your application.
+        </p>
+
+        <div className="my-6 rounded-xl bg-secondary p-4">
+            <h4 className="text-sm font-semibold text-primary">Path Forwarding Flow</h4>
+            <ol className="mt-2 space-y-2 text-sm text-tertiary">
+                <li>
+                    <strong>1.</strong> User visits: <code className="rounded bg-tertiary px-1 py-0.5 text-xs">hub.thesqd.com/.../my-app/project/abc123</code>
+                </li>
+                <li>
+                    <strong>2.</strong> Directory identifies <code className="rounded bg-tertiary px-1 py-0.5 text-xs">my-app</code> as the page
+                </li>
+                <li>
+                    <strong>3.</strong> Remaining path <code className="rounded bg-tertiary px-1 py-0.5 text-xs">/project/abc123</code> is forwarded to iframe
+                </li>
+                <li>
+                    <strong>4.</strong> Your app loads: <code className="rounded bg-tertiary px-1 py-0.5 text-xs">your-app.com/project/abc123</code>
+                </li>
+            </ol>
+        </div>
+
+        <h3 className="mt-6 text-md font-semibold text-primary">Example Use Cases</h3>
+        <ul className="mt-2 space-y-1 text-sm text-tertiary">
+            <li><strong>Project viewer:</strong> <code className="rounded bg-secondary px-1 py-0.5 text-xs">/project/abc123</code> opens a specific project</li>
+            <li><strong>User profiles:</strong> <code className="rounded bg-secondary px-1 py-0.5 text-xs">/user/john-doe</code> opens a user's profile</li>
+            <li><strong>Settings pages:</strong> <code className="rounded bg-secondary px-1 py-0.5 text-xs">/settings/notifications</code> opens notification settings</li>
+            <li><strong>Reports:</strong> <code className="rounded bg-secondary px-1 py-0.5 text-xs">/reports/2024/q1</code> opens a specific report</li>
+        </ul>
+
+        <h3 className="mt-6 text-md font-semibold text-primary">Reading Paths in Your App</h3>
+        <p className="text-sm text-tertiary">
+            Use JavaScript's pathname API to read the forwarded path in your embedded app:
+        </p>
+        <div className="my-4 rounded-lg bg-secondary p-4">
+            <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-medium text-tertiary">JavaScript</span>
+                <CopyButton
+                    text={`// Get the current path
+const path = window.location.pathname;
+// e.g., "/project/abc123"
+
+// Parse path segments
+const segments = path.split('/').filter(Boolean);
+// e.g., ["project", "abc123"]
+
+const [resource, id] = segments;`}
+                />
+            </div>
+            <pre className="overflow-x-auto text-xs text-secondary">
+                <code>{`// Get the current path
+const path = window.location.pathname;
+// e.g., "/project/abc123"
+
+// Parse path segments
+const segments = path.split('/').filter(Boolean);
+// e.g., ["project", "abc123"]
+
+const [resource, id] = segments;`}</code>
+            </pre>
+        </div>
+
+        <h3 className="mt-6 text-md font-semibold text-primary">Framework Examples</h3>
+
+        <div className="my-4 rounded-lg bg-secondary p-4">
+            <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-medium text-tertiary">Next.js (App Router)</span>
+                <CopyButton
+                    text={`// app/project/[id]/page.tsx
+export default function ProjectPage({
+  params
+}: {
+  params: { id: string }
+}) {
+  return <div>Project: {params.id}</div>
+}`}
+                />
+            </div>
+            <pre className="overflow-x-auto text-xs text-secondary">
+                <code>{`// app/project/[id]/page.tsx
+export default function ProjectPage({
+  params
+}: {
+  params: { id: string }
+}) {
+  return <div>Project: {params.id}</div>
+}`}</code>
+            </pre>
+        </div>
+
+        <div className="my-4 rounded-lg bg-secondary p-4">
+            <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-medium text-tertiary">React Router</span>
+                <CopyButton
+                    text={`import { useParams } from 'react-router-dom';
+
+function ProjectPage() {
+  const { id } = useParams();
+  return <div>Project: {id}</div>
+}`}
+                />
+            </div>
+            <pre className="overflow-x-auto text-xs text-secondary">
+                <code>{`import { useParams } from 'react-router-dom';
+
+function ProjectPage() {
+  const { id } = useParams();
+  return <div>Project: {id}</div>
+}`}</code>
+            </pre>
+        </div>
+
+        <div className="my-6 rounded-xl bg-secondary p-4">
+            <h4 className="text-sm font-semibold text-primary">Combining Paths & Parameters</h4>
+            <p className="mt-2 text-sm text-tertiary">
+                URL paths and query parameters work together. A URL like:
+            </p>
+            <code className="mt-2 block rounded bg-tertiary px-2 py-1 text-xs">hub.thesqd.com/.../my-app/project/abc?tab=settings</code>
+            <p className="mt-2 text-sm text-tertiary">
+                Will load your app at: <code className="rounded bg-tertiary px-1 py-0.5 text-xs">your-app.com/project/abc?tab=settings</code>
+            </p>
+        </div>
+    </div>
+);
+
 const AiPromptsContent = () => (
     <div className="prose prose-sm max-w-none">
         <h3 className="text-md font-semibold text-primary">AI App Builder Prompt</h3>
@@ -315,6 +444,7 @@ export const UrlParamsInfoSlideout = ({ iframeUrl }: UrlParamsInfoSlideoutProps)
                     {selectedTab === "url-params" && (
                         showFilloutGuide ? <FilloutGuideContent /> : <GenericUrlParamsContent />
                     )}
+                    {selectedTab === "url-paths" && <UrlPathsContent />}
                     {selectedTab === "ai-prompts" && <AiPromptsContent />}
                 </SlideoutMenu.Content>
                 <SlideoutMenu.Footer className="flex w-full justify-end gap-3">
