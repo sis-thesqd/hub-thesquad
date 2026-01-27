@@ -37,6 +37,7 @@ type UseHeaderContentEffectParams = {
     setCreateFolderParentId: (id: string | null) => void;
     setError: (error: string | null) => void;
     emptyForm: FormState;
+    iframePathSegments?: string[];
 };
 
 export const useHeaderContentEffect = ({
@@ -64,6 +65,7 @@ export const useHeaderContentEffect = ({
     setCreateFolderParentId,
     setError,
     emptyForm,
+    iframePathSegments = [],
 }: UseHeaderContentEffectParams) => {
     useEffect(() => {
         if (variant === "embedded" && onHeaderContentChange) {
@@ -113,6 +115,7 @@ export const useHeaderContentEffect = ({
                         onEdit={handleEditClick}
                         isFavorite={favoriteEntryIds.includes(activeEntry.id)}
                         onToggleFavorite={() => toggleFavorite(activeEntry.id)}
+                        pathSegments={iframePathSegments}
                     />
                 );
             } else {
@@ -164,5 +167,5 @@ export const useHeaderContentEffect = ({
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, departmentItems, entries, selectedDepartmentId, entriesById, allFoldersById, favoriteEntryIds]);
+    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, departmentItems, entries, selectedDepartmentId, entriesById, allFoldersById, favoriteEntryIds, iframePathSegments]);
 };

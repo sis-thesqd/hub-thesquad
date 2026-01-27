@@ -77,6 +77,7 @@ export const DirectoryApp = ({
         isExternalPagesView,
         externalPageEntries,
         externalPathById,
+        iframePathSegments,
     } = useDirectoryData({
         initialDepartmentId,
         initialPath,
@@ -191,6 +192,7 @@ export const DirectoryApp = ({
         setCreateFolderParentId,
         setError,
         emptyForm,
+        iframePathSegments,
     });
 
     useActiveEntryEffect({
@@ -278,7 +280,7 @@ export const DirectoryApp = ({
 
                     {/* Embedded Page View */}
                     {!isLoading && activeFrame && (
-                        <IframeView frame={activeFrame} />
+                        <IframeView frame={activeFrame} pathSegments={iframePathSegments} />
                     )}
 
                     {/* Folder Grid View */}

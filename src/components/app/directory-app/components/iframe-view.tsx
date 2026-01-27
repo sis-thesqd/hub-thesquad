@@ -8,9 +8,10 @@ import { cx } from "@/utils/cx";
 
 type IframeViewProps = {
     frame: Frame;
+    pathSegments?: string[];
 };
 
-export const IframeView = ({ frame }: IframeViewProps) => {
+export const IframeView = ({ frame, pathSegments = [] }: IframeViewProps) => {
     const urlParams = useUrlParams();
     const [isLoading, setIsLoading] = useState(true);
 
@@ -26,6 +27,13 @@ export const IframeView = ({ frame }: IframeViewProps) => {
         try {
             const url = new URL(urlString);
 
+            // Append any additional path segments to the iframe URL
+            if (pathSegments.length > 0) {
+                // Ensure pathname ends with / before appending, or join properly
+                const basePath = url.pathname.endsWith("/") ? url.pathname.slice(0, -1) : url.pathname;
+                url.pathname = `${basePath}/${pathSegments.join("/")}`;
+            }
+
             // Merge parent URL params into iframe URL
             // Parent params take precedence over existing iframe params
             urlParams.forEach((value, key) => {
@@ -37,7 +45,7 @@ export const IframeView = ({ frame }: IframeViewProps) => {
             // If iframe_url is not a valid URL, return it as-is
             return urlString;
         }
-    }, [frame.iframe_url, urlParams]);
+    }, [frame.iframe_url, urlParams, pathSegments]);
 
     // Reset loading state when frame changes
     useEffect(() => {

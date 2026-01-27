@@ -149,11 +149,12 @@ export const useDirectoryData = ({
         return map;
     }, [externalPageEntries, allFoldersById]);
 
-    const activeEntry = useMemo(() => {
-        if (!pathSegments?.length) return null;
+    const { activeEntry, iframePathSegments } = useMemo(() => {
+        if (!pathSegments?.length) return { activeEntry: null, iframePathSegments: [] };
         // External pages view is a virtual folder, not a real entry
-        if (isExternalPagesView) return null;
-        return findEntryByPath(childrenByParent, pathSegments);
+        if (isExternalPagesView) return { activeEntry: null, iframePathSegments: [] };
+        const result = findEntryByPath(childrenByParent, pathSegments);
+        return { activeEntry: result.entry, iframePathSegments: result.remainingPath };
     }, [childrenByParent, pathSegments, isExternalPagesView]);
 
     const activeFrame = activeEntry?.frame_id ? frameById.get(activeEntry.frame_id) ?? null : null;
@@ -213,5 +214,7 @@ export const useDirectoryData = ({
         hasExternalPages,
         isExternalPagesView,
         externalPathById,
+        // Iframe path forwarding
+        iframePathSegments,
     };
 };

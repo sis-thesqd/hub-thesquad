@@ -13,6 +13,7 @@ type EmbeddedHeaderContentProps = {
     onEdit: () => void;
     isFavorite?: boolean;
     onToggleFavorite?: () => void;
+    pathSegments?: string[];
 };
 
 export const EmbeddedHeaderContent = ({
@@ -20,11 +21,12 @@ export const EmbeddedHeaderContent = ({
     onEdit,
     isFavorite = false,
     onToggleFavorite,
+    pathSegments = [],
 }: EmbeddedHeaderContentProps) => {
     const urlParams = useUrlParams();
     const clipboard = useClipboard();
 
-    // Build URL with merged params (same logic as IframeView)
+    // Build URL with merged params and path segments (same logic as IframeView)
     const iframeUrlWithParams = useMemo(() => {
         if (!activeFrame.iframe_url) return "";
 
@@ -36,6 +38,13 @@ export const EmbeddedHeaderContent = ({
 
         try {
             const url = new URL(urlString);
+
+            // Append any additional path segments to the URL
+            if (pathSegments.length > 0) {
+                const basePath = url.pathname.endsWith("/") ? url.pathname.slice(0, -1) : url.pathname;
+                url.pathname = `${basePath}/${pathSegments.join("/")}`;
+            }
+
             urlParams.forEach((value, key) => {
                 url.searchParams.set(key, value);
             });
@@ -43,7 +52,7 @@ export const EmbeddedHeaderContent = ({
         } catch {
             return urlString;
         }
-    }, [activeFrame.iframe_url, urlParams]);
+    }, [activeFrame.iframe_url, urlParams, pathSegments]);
 
     const handleOpenInNewTab = () => {
         window.open(iframeUrlWithParams, "_blank", "noopener,noreferrer");
