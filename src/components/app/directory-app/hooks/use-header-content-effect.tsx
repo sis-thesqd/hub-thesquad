@@ -75,7 +75,7 @@ export const useHeaderContentEffect = ({
                     setPageForm({
                         name: activeFrame.name,
                         slug: activeEntry.slug,
-                        iframeUrl: activeFrame.iframe_url,
+                        iframeUrl: activeFrame.iframe_url ?? "",
                         description: activeFrame.description ?? "",
                         emoji: activeEntry.emoji ?? "",
                     });
@@ -92,20 +92,31 @@ export const useHeaderContentEffect = ({
                     );
                     // Query ALL placements for this frame (across all departments)
                     const placementsResult = await getPagePlacements(activeFrame.id);
-                    const placements = (placementsResult.data ?? [])
-                        .filter((entry): entry is { id: string; parent_id: string } => entry.parent_id !== null)
-                        .map((entry) => entry.parent_id);
-                    replaceSelectedItems(
-                        pagePlacements,
-                        placements.map((id) => {
-                            const folder = allFoldersById.get(id);
+                    const seenIds = new Set<string>();
+                    const placementItems = (placementsResult.data ?? [])
+                        .map((entry) => {
+                            if (entry.parent_id === null) {
+                                // Root-level placement - use dept-root- format
+                                const dept = departments.find((d) => d.id === entry.department_id);
+                                return {
+                                    id: `dept-root-${entry.department_id}`,
+                                    label: `${dept?.name ?? entry.department_id} (Root)`,
+                                };
+                            }
+                            // Folder placement
+                            const folder = allFoldersById.get(entry.parent_id);
                             return {
-                                id,
-                                label: folder?.name ?? id,
+                                id: entry.parent_id,
+                                label: folder?.name ?? entry.parent_id,
                                 emoji: folder?.emoji ?? undefined,
                             };
-                        }),
-                    );
+                        })
+                        .filter((item) => {
+                            if (seenIds.has(item.id)) return false;
+                            seenIds.add(item.id);
+                            return true;
+                        });
+                    replaceSelectedItems(pagePlacements, placementItems);
                     setEditPageOpen(true);
                 };
 

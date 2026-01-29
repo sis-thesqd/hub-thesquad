@@ -77,7 +77,7 @@ export const CreateFolderModal = ({
 
     return (
         <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
-            <Button className="hidden" />
+            <Button id="create-folder-modal-trigger" className="hidden" />
             <ModalOverlay>
                 <Modal className="max-w-xl">
                     <Dialog className="w-full">

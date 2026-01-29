@@ -165,6 +165,7 @@ export const useDirectoryHandlers = ({
 
         const name = pageForm.name.trim();
         const iframeUrl = pageForm.iframeUrl.trim();
+
         if (!name || !iframeUrl) return;
 
         if (!placementIds.length) {
@@ -194,20 +195,37 @@ export const useDirectoryHandlers = ({
 
         const frame = frameResult.data;
 
+        // Resolve placement IDs - department roots use dept-root- prefix
+        const resolvedPlacements = placementIds.map((placementId) => {
+            if (placementId.startsWith("dept-root-")) {
+                const deptId = placementId.replace("dept-root-", "");
+                return { deptId, parentId: null as string | null };
+            }
+            const folder = allFoldersById.get(placementId);
+            return {
+                deptId: folder?.department_id ?? selectedDepartmentId,
+                parentId: placementId as string | null,
+            };
+        });
+
+        // Get folder IDs for slug checking (only non-root placements)
+        const folderIds = placementIds.filter((id) => !id.startsWith("dept-root-"));
+
         // Check for slug conflicts in target folders
-        const slugsResult = await getExistingSlugs(placementIds);
-        const slugsByParent = new Map<string, Set<string>>();
+        const slugsResult = folderIds.length > 0 ? await getExistingSlugs(folderIds) : { success: true, data: [] };
+        const slugsByParent = new Map<string | null, Set<string>>();
         if (slugsResult.success && slugsResult.data) {
             slugsResult.data.forEach((entry) => {
-                if (!slugsByParent.has(entry.parent_id)) {
-                    slugsByParent.set(entry.parent_id, new Set());
+                const key = entry.parent_id ?? null;
+                if (!slugsByParent.has(key)) {
+                    slugsByParent.set(key, new Set());
                 }
-                slugsByParent.get(entry.parent_id)?.add(entry.slug);
+                slugsByParent.get(key)?.add(entry.slug);
             });
         }
 
         // Generate unique slugs for each placement
-        const getUniqueSlug = (parentId: string, baseSlug: string): string => {
+        const getUniqueSlug = (parentId: string | null, baseSlug: string): string => {
             const existingInFolder = slugsByParent.get(parentId) ?? new Set();
             if (!existingInFolder.has(baseSlug)) return baseSlug;
             let counter = 2;
@@ -219,21 +237,23 @@ export const useDirectoryHandlers = ({
 
         // Track slugs used for first placement (for navigation)
         let firstPlacementSlug = slug;
+        let firstPlacementDeptId = selectedDepartmentId;
 
-        const directoryEntries = placementIds.map((placementId, index) => {
-            const folder = allFoldersById.get(placementId);
-            const deptId = folder?.department_id ?? selectedDepartmentId;
-            const uniqueSlug = getUniqueSlug(placementId, slug);
+        const directoryEntries = resolvedPlacements.map((placement, index) => {
+            const uniqueSlug = getUniqueSlug(placement.parentId, slug);
             // Track the first placement's slug for navigation
-            if (index === 0) firstPlacementSlug = uniqueSlug;
-            // Add the slug to the set so subsequent placements in the same folder get unique slugs
-            if (!slugsByParent.has(placementId)) {
-                slugsByParent.set(placementId, new Set());
+            if (index === 0) {
+                firstPlacementSlug = uniqueSlug;
+                firstPlacementDeptId = placement.deptId;
             }
-            slugsByParent.get(placementId)?.add(uniqueSlug);
+            // Add the slug to the set so subsequent placements in the same folder get unique slugs
+            if (!slugsByParent.has(placement.parentId)) {
+                slugsByParent.set(placement.parentId, new Set());
+            }
+            slugsByParent.get(placement.parentId)?.add(uniqueSlug);
             return {
-                department_id: deptId,
-                parent_id: placementId,
+                department_id: placement.deptId,
+                parent_id: placement.parentId,
                 frame_id: frame.id,
                 name,
                 slug: uniqueSlug,
@@ -251,13 +271,12 @@ export const useDirectoryHandlers = ({
 
         invalidateEntriesAndFrames();
 
-        const firstPlacement = placementIds[0];
-        const parentFolder = allFoldersById.get(firstPlacement);
-        const targetDeptId = parentFolder?.department_id ?? selectedDepartmentId;
+        const firstPlacement = resolvedPlacements[0];
+        const parentFolder = firstPlacement.parentId ? allFoldersById.get(firstPlacement.parentId) : null;
         const targetPath = parentFolder
             ? buildPathSegments(allFoldersById, parentFolder).concat(firstPlacementSlug)
             : [firstPlacementSlug];
-        router.push(appendUrlParams(`/${targetDeptId}/${targetPath.join("/")}`));
+        router.push(appendUrlParams(`/${firstPlacementDeptId}/${targetPath.join("/")}`));
     }, [selectedDepartmentId, pageForm, pageDepartments, allFoldersById, setError, setPageForm, setCreatePageOpen, clearSelectedItems, invalidateEntriesAndFrames, router, appendUrlParams]);
 
     const handleUpdateFolder = useCallback(async (entry: DirectoryEntry) => {
@@ -288,6 +307,7 @@ export const useDirectoryHandlers = ({
 
         const name = pageForm.name.trim();
         const iframeUrl = pageForm.iframeUrl.trim();
+
         if (!name || !iframeUrl) return;
 
         const slug = pageForm.slug.trim() || slugify(name);
@@ -311,14 +331,30 @@ export const useDirectoryHandlers = ({
         const placementsResult = await getPagePlacements(frame.id);
         const allExistingPlacements = placementsResult.data ?? [];
 
-        const existingPlacements = allExistingPlacements
-            .filter((placement): placement is { id: string; parent_id: string } => placement.parent_id !== null);
+        // Normalize placement IDs for comparison
+        // dept-root-{id} format -> null parent_id with department_id
+        // folder ID -> parent_id with that ID
+        const normalizeToKey = (placementId: string): string => {
+            if (placementId.startsWith("dept-root-")) {
+                return `root:${placementId.replace("dept-root-", "")}`;
+            }
+            return `folder:${placementId}`;
+        };
 
-        const selectedSet = new Set(placementIds);
-        const existingSet = new Set(existingPlacements.map((placement) => placement.parent_id));
+        const existingToKey = (placement: { id: string; parent_id: string | null; department_id: string }): string => {
+            if (placement.parent_id === null) {
+                return `root:${placement.department_id}`;
+            }
+            return `folder:${placement.parent_id}`;
+        };
 
-        const toRemove = existingPlacements.filter((placement) => !selectedSet.has(placement.parent_id));
-        const toAdd = Array.from(selectedSet).filter((id) => !existingSet.has(id));
+        const selectedSet = new Set(placementIds.map(normalizeToKey));
+        const existingMap = new Map(allExistingPlacements.map((p) => [existingToKey(p), p]));
+        const existingSet = new Set(existingMap.keys());
+
+        const toRemove = allExistingPlacements.filter((placement) => !selectedSet.has(existingToKey(placement)));
+        const toAddKeys = Array.from(selectedSet).filter((key) => !existingSet.has(key));
+        const toAdd = placementIds.filter((id) => toAddKeys.includes(normalizeToKey(id)));
 
         if (toRemove.length) {
             const ids = toRemove.map((placement) => placement.id);
@@ -326,20 +362,37 @@ export const useDirectoryHandlers = ({
         }
 
         if (toAdd.length) {
+            // Resolve placement IDs
+            const resolvedToAdd = toAdd.map((placementId) => {
+                if (placementId.startsWith("dept-root-")) {
+                    const deptId = placementId.replace("dept-root-", "");
+                    return { deptId, parentId: null as string | null };
+                }
+                const folder = allFoldersById.get(placementId);
+                return {
+                    deptId: folder?.department_id ?? selectedDepartmentId,
+                    parentId: placementId as string | null,
+                };
+            });
+
+            // Get folder IDs for slug checking (only non-root placements)
+            const folderIds = toAdd.filter((id) => !id.startsWith("dept-root-"));
+
             // Check for slug conflicts in target folders
-            const slugsResult = await getExistingSlugs(toAdd);
-            const slugsByParent = new Map<string, Set<string>>();
+            const slugsResult = folderIds.length > 0 ? await getExistingSlugs(folderIds) : { success: true, data: [] };
+            const slugsByParent = new Map<string | null, Set<string>>();
             if (slugsResult.success && slugsResult.data) {
                 slugsResult.data.forEach((entry) => {
-                    if (!slugsByParent.has(entry.parent_id)) {
-                        slugsByParent.set(entry.parent_id, new Set());
+                    const key = entry.parent_id ?? null;
+                    if (!slugsByParent.has(key)) {
+                        slugsByParent.set(key, new Set());
                     }
-                    slugsByParent.get(entry.parent_id)?.add(entry.slug);
+                    slugsByParent.get(key)?.add(entry.slug);
                 });
             }
 
             // Generate unique slugs for each placement
-            const getUniqueSlug = (parentId: string, baseSlug: string): string => {
+            const getUniqueSlug = (parentId: string | null, baseSlug: string): string => {
                 const existingInFolder = slugsByParent.get(parentId) ?? new Set();
                 if (!existingInFolder.has(baseSlug)) return baseSlug;
                 let counter = 2;
@@ -349,18 +402,16 @@ export const useDirectoryHandlers = ({
                 return `${baseSlug}-${counter}`;
             };
 
-            const newEntries = toAdd.map((placementId) => {
-                const folder = allFoldersById.get(placementId);
-                const deptId = folder?.department_id ?? selectedDepartmentId;
-                const uniqueSlug = getUniqueSlug(placementId, slug);
+            const newEntries = resolvedToAdd.map((placement) => {
+                const uniqueSlug = getUniqueSlug(placement.parentId, slug);
                 // Add the slug to the set so subsequent placements in the same folder get unique slugs
-                if (!slugsByParent.has(placementId)) {
-                    slugsByParent.set(placementId, new Set());
+                if (!slugsByParent.has(placement.parentId)) {
+                    slugsByParent.set(placement.parentId, new Set());
                 }
-                slugsByParent.get(placementId)?.add(uniqueSlug);
+                slugsByParent.get(placement.parentId)?.add(uniqueSlug);
                 return {
-                    department_id: deptId,
-                    parent_id: placementId,
+                    department_id: placement.deptId,
+                    parent_id: placement.parentId,
                     frame_id: frame.id,
                     name,
                     slug: uniqueSlug,
@@ -456,9 +507,21 @@ export const useDirectoryHandlers = ({
             setInlineFolderForm(emptyForm);
             setInlineFolderOpen(true);
         } else {
-            const folder = allFoldersById.get(key as string);
-            if (folder) {
-                const deptId = folder.department_id;
+            const keyStr = key as string;
+            let deptId: string | null = null;
+
+            if (keyStr.startsWith("dept-root-")) {
+                // Department root selected
+                deptId = keyStr.replace("dept-root-", "");
+            } else {
+                // Folder selected
+                const folder = allFoldersById.get(keyStr);
+                if (folder) {
+                    deptId = folder.department_id;
+                }
+            }
+
+            if (deptId) {
                 const alreadySelected = pageDepartments.items.some((item) => item.id === deptId);
                 if (!alreadySelected) {
                     const dept = departments.find((d) => d.id === deptId);
@@ -469,7 +532,7 @@ export const useDirectoryHandlers = ({
                 }
             }
         }
-    }, [selectedDepartmentId, allFoldersById, pageDepartments, pagePlacements, departments, setInlineFolderForm, setInlineFolderOpen]);
+    }, [allFoldersById, pageDepartments, pagePlacements, departments, setInlineFolderForm, setInlineFolderOpen]);
 
     const handleNewFolderClick = useCallback(() => {
         setFolderForm(emptyForm);

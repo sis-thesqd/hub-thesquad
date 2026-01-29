@@ -55,7 +55,7 @@ export const EditFolderModal = ({
 
     return (
         <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
-            <Button className="hidden" />
+            <Button id="edit-folder-modal-trigger" className="hidden" />
             <ModalOverlay>
                 <Modal className="max-w-xl">
                     <Dialog className="w-full">

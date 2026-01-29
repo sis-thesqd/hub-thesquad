@@ -21,7 +21,7 @@ export const ConfirmDeleteModal = ({
 }: ConfirmDeleteModalProps) => {
     return (
         <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
-            <Button className="hidden" />
+            <Button id="confirm-delete-modal-trigger" className="hidden" />
             <ModalOverlay>
                 <Modal className="max-w-md">
                     <Dialog className="w-full">

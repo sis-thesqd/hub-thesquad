@@ -486,13 +486,13 @@ export async function deleteDirectoryEntries(
 
 export async function getPagePlacements(
     frameId: string
-): Promise<{ success: boolean; data?: { id: string; parent_id: string | null }[]; error?: string }> {
+): Promise<{ success: boolean; data?: { id: string; parent_id: string | null; department_id: string }[]; error?: string }> {
     try {
         const supabase = await createClient();
 
         const { data, error } = await supabase
             .from("sh_directory")
-            .select("id,parent_id")
+            .select("id,parent_id,department_id")
             .eq("frame_id", frameId);
 
         if (error) {
@@ -622,7 +622,10 @@ export async function createFrame(data: {
         const { data: result, error } = await supabase
             .from("sh_frames")
             .insert({
-                ...data,
+                name: data.name,
+                iframe_url: data.iframe_url,
+                description: data.description,
+                department_ids: data.department_ids,
                 created_by: workerId,
                 updated_by: workerId,
             })

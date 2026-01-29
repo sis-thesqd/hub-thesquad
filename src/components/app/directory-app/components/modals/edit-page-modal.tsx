@@ -97,7 +97,7 @@ export const EditPageModal = ({
 
     return (
         <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
-            <Button className="hidden" />
+            <Button id="edit-page-modal-trigger" className="hidden" />
             <ModalOverlay>
                 <Modal className="max-w-xl">
                     <Dialog className="w-full">

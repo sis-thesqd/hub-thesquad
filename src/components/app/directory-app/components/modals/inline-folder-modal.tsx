@@ -59,7 +59,7 @@ export const InlineFolderModal = ({
 
     return (
         <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
-            <Button className="hidden" />
+            <Button id="inline-folder-modal-trigger" className="hidden" />
             <ModalOverlay>
                 <Modal className="max-w-xl">
                     <Dialog className="w-full">

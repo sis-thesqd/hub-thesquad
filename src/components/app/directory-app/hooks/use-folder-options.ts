@@ -22,20 +22,40 @@ export const useFolderOptions = ({
     departments,
 }: UseFolderOptionsParams): FolderOption[] => {
     return useMemo(() => {
-        const options = allFolders.map((folder) => {
-            const dept = departments.find((d) => d.id === folder.department_id);
-            const path = allFolderPathById.get(folder.id)?.join("/") ?? folder.slug;
-            return {
-                id: folder.id,
-                label: folder.name,
-                supportingText: `${dept?.name ?? "Unknown"} / ${path}`,
-                emoji: folder.emoji ?? undefined,
-            };
+        const seenIds = new Set<string>();
+        const options: FolderOption[] = [
+            { id: "__create_new__", label: "+ Create new folder" },
+        ];
+        seenIds.add("__create_new__");
+
+        // Department root options
+        departments.forEach((dept) => {
+            const id = `dept-root-${dept.id}`;
+            if (!seenIds.has(id)) {
+                seenIds.add(id);
+                options.push({
+                    id,
+                    label: `${dept.name} (Root)`,
+                    supportingText: "Top level",
+                });
+            }
         });
 
-        return [
-            { id: "__create_new__", label: "+ Create new folder" },
-            ...options,
-        ];
+        // Folder options
+        allFolders.forEach((folder) => {
+            if (!seenIds.has(folder.id)) {
+                seenIds.add(folder.id);
+                const dept = departments.find((d) => d.id === folder.department_id);
+                const path = allFolderPathById.get(folder.id)?.join("/") ?? folder.slug;
+                options.push({
+                    id: folder.id,
+                    label: folder.name,
+                    supportingText: `${dept?.name ?? "Unknown"} / ${path}`,
+                    emoji: folder.emoji ?? undefined,
+                });
+            }
+        });
+
+        return options;
     }, [allFolders, allFolderPathById, departments]);
 };
