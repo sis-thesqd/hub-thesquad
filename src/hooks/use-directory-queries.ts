@@ -13,6 +13,7 @@ interface DirectoryData {
     entries: DirectoryEntry[];
     frames: Frame[];
     navigationPages: NavigationPage[];
+    divisionOrder: string[];
 }
 
 // Single fetch function that gets all directory data
@@ -37,6 +38,7 @@ export function useDirectoryQueries() {
         navigationPages: query.data?.navigationPages ?? [],
         entries: query.data?.entries ?? [],
         frames: query.data?.frames ?? [],
+        divisionOrder: query.data?.divisionOrder ?? [],
         isLoading: query.isLoading,
         isError: query.isError,
         refetchAll: query.refetch,

@@ -40,7 +40,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     const { worker } = useAuth();
 
     // React Query for data fetching - data persists across navigation
-    const { departments, navigationPages, entries, frames, refetchAll, isLoading: isDirectoryLoading } = useDirectoryQueries();
+    const { departments, navigationPages, entries, frames, divisionOrder, refetchAll, isLoading: isDirectoryLoading } = useDirectoryQueries();
     const { invalidateEntriesAndFrames } = useInvalidateDirectory();
 
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
@@ -100,43 +100,18 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     }, [initialDepartmentId]);
 
     const departmentItems = useMemo(() => {
-        // Hard-coded division mappings
-        const divisionMap: Record<string, string> = {
-            "Design Squad": "CREATIVE",
-            "Video Squad": "CREATIVE",
-            "Creative Direction Squad": "CREATIVE",
-            "Creative Products Division": "CREATIVE",
-            
-            "Social Media Squad": "STRATEGY",
-            "Brand Squad": "STRATEGY",
-            "Web Squad": "STRATEGY",
-            "Strategy Products Division": "STRATEGY",
-            
-            "Sales Squad": "REVENUE",
-            "Customer Experience Squad": "REVENUE",
-            "Marketing Squad": "REVENUE",
-            
-            "C-Suite": "SQUAD",
-            "Exec Squad": "SQUAD",
-            "Remix": "SQUAD",
-            "Systems Integration Squad": "SQUAD",
-        };
-
-        // Group pages by division
+        // Group pages by division (using page.division from config)
         const groupedPages: Record<string, typeof navigationPages> = {};
         navigationPages.forEach((page) => {
-            const division = divisionMap[page.title] || "SQUAD";
+            const division = page.division || "SQUAD";
             if (!groupedPages[division]) {
                 groupedPages[division] = [];
             }
             groupedPages[division].push(page);
         });
 
-        // Define division order
-        const divisionOrder = ["CREATIVE", "STRATEGY", "REVENUE", "SQUAD"];
-        
         const items: any[] = [];
-        
+
         divisionOrder.forEach((division) => {
             const pagesInDivision = groupedPages[division];
             if (pagesInDivision && pagesInDivision.length > 0) {
@@ -145,7 +120,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                     label: division,
                     isHeading: true,
                 });
-                
+
                 // Add pages in this division
                 pagesInDivision.forEach((page) => {
                     const department = departments.find((dept) => slugify(dept.name) === page.slug);
@@ -161,7 +136,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
         });
 
         return items;
-    }, [departments, navigationPages]);
+    }, [departments, navigationPages, divisionOrder]);
 
     // Department items with icons for modals
     const homeDepartmentItems = useMemo(() => {

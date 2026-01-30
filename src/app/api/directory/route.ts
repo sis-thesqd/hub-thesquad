@@ -11,6 +11,7 @@ export async function GET() {
             { data: entries, error: entriesError },
             { data: frames, error: framesError },
             { data: navigationPagesConfig, error: navError },
+            { data: divisionOrderConfig, error: divisionOrderError },
         ] = await Promise.all([
             supabase
                 .from("rippling_departments")
@@ -29,10 +30,15 @@ export async function GET() {
                 .select("value")
                 .eq("key", "navigation_pages")
                 .single(),
+            supabase
+                .from("sh_config")
+                .select("value")
+                .eq("key", "division_order")
+                .single(),
         ]);
 
-        if (deptError || entriesError || framesError || navError) {
-            console.error("Directory fetch errors:", { deptError, entriesError, framesError, navError });
+        if (deptError || entriesError || framesError || navError || divisionOrderError) {
+            console.error("Directory fetch errors:", { deptError, entriesError, framesError, navError, divisionOrderError });
             return NextResponse.json(
                 { error: "Failed to fetch directory data" },
                 { status: 500 }
@@ -44,6 +50,7 @@ export async function GET() {
             entries: entries ?? [],
             frames: frames ?? [],
             navigationPages: navigationPagesConfig?.value ?? [],
+            divisionOrder: divisionOrderConfig?.value ?? [],
         });
     } catch (error) {
         console.error("Directory API error:", error);

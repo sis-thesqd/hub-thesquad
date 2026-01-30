@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Monitor01, Moon01, Sun, Save01, FolderClosed, LayoutLeft, LayoutRight } from "@untitledui/icons";
+import { Monitor01, Moon01, Sun, Save01, FolderClosed, LayoutLeft, LayoutRight, ChevronUp, ChevronDown, X, Plus, AlertTriangle } from "@untitledui/icons";
 import * as AllIcons from "@untitledui/icons";
 import { useTheme } from "next-themes";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,10 +18,11 @@ import { Select } from "@/components/base/select/select";
 import type { SelectItemType } from "@/components/base/select/select";
 import * as RadioGroups from "@/components/base/radio-groups/radio-groups";
 import type { NavigationPage } from "@/utils/supabase/types";
+import { Dialog, DialogTrigger, Modal, ModalOverlay } from "@/components/application/modals/modal";
 import { cx } from "@/utils/cx";
 import { getIconByName } from "@/utils/icon-map";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
-import { updateNavigationPages } from "./actions";
+import { updateNavigationPages, updateDivisionOrder } from "./actions";
 
 const SIDEBAR_DEFAULT_EXPANDED_KEY = "sidebar-default-expanded";
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
@@ -85,16 +86,29 @@ export const SettingsPage = () => {
     const appendUrlParams = useAppendUrlParams();
     const { theme, setTheme } = useTheme();
     const { worker } = useAuth();
-    const { departments, navigationPages, entries, frames } = useDirectoryQueries();
+    const { departments, navigationPages, entries, frames, divisionOrder } = useDirectoryQueries();
     const navPagesLoading = navigationPages.length === 0;
     const queryClient = useQueryClient();
 
     const [editedPages, setEditedPages] = useState<NavigationPage[]>([]);
+    const [editedDivisionOrder, setEditedDivisionOrder] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+    const [hasDivisionOrderChanges, setHasDivisionOrderChanges] = useState(false);
     const [commandMenuOpen, setCommandMenuOpen] = useState(false);
     const [selectedTab, setSelectedTab] = useState<string>("app-settings");
     const [sidebarDefaultExpanded, setSidebarDefaultExpanded] = useState<boolean>(true);
+    const [newDivision, setNewDivision] = useState("");
+    const [addDivisionModalOpen, setAddDivisionModalOpen] = useState(false);
+    const [deleteDivisionModalOpen, setDeleteDivisionModalOpen] = useState(false);
+    const [divisionToDelete, setDivisionToDelete] = useState<string | null>(null);
+    const [targetDivision, setTargetDivision] = useState<string>("");
+    const [mounted, setMounted] = useState(false);
+
+    // Track mount state to avoid hydration mismatch with theme
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Load sidebar default preference from localStorage
     useEffect(() => {
@@ -128,43 +142,18 @@ export const SettingsPage = () => {
 
     // Build department items for sidebar
     const departmentItems = useMemo(() => {
-        // Hard-coded division mappings
-        const divisionMap: Record<string, string> = {
-            "Design Squad": "CREATIVE",
-            "Video Squad": "CREATIVE",
-            "Creative Direction Squad": "CREATIVE",
-            "Creative Products Division": "CREATIVE",
-            
-            "Social Media Squad": "STRATEGY",
-            "Brand Squad": "STRATEGY",
-            "Web Squad": "STRATEGY",
-            "Strategy Products Division": "STRATEGY",
-            
-            "Sales Squad": "REVENUE",
-            "Customer Experience Squad": "REVENUE",
-            "Marketing Squad": "REVENUE",
-            
-            "C-Suite": "SQUAD",
-            "Exec Squad": "SQUAD",
-            "Remix": "SQUAD",
-            "Systems Integration Squad": "SQUAD",
-        };
-
-        // Group pages by division
+        // Group pages by division (using page.division from config)
         const groupedPages: Record<string, typeof navigationPages> = {};
         navigationPages.forEach((page) => {
-            const division = divisionMap[page.title] || "SQUAD";
+            const division = page.division || "SQUAD";
             if (!groupedPages[division]) {
                 groupedPages[division] = [];
             }
             groupedPages[division].push(page);
         });
 
-        // Define division order
-        const divisionOrder = ["CREATIVE", "STRATEGY", "REVENUE", "SQUAD"];
-        
         const items: any[] = [];
-        
+
         divisionOrder.forEach((division) => {
             const pagesInDivision = groupedPages[division];
             if (pagesInDivision && pagesInDivision.length > 0) {
@@ -173,7 +162,7 @@ export const SettingsPage = () => {
                     label: division,
                     isHeading: true,
                 });
-                
+
                 // Add pages in this division
                 pagesInDivision.forEach((page) => {
                     const department = departments.find((dept) => {
@@ -196,7 +185,7 @@ export const SettingsPage = () => {
         });
 
         return items;
-    }, [departments, navigationPages]);
+    }, [departments, navigationPages, divisionOrder]);
 
     // Handle command menu selection
     const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
@@ -245,6 +234,13 @@ export const SettingsPage = () => {
         }
     }, [navigationPages, editedPages.length]);
 
+    // Initialize edited division order
+    useEffect(() => {
+        if (divisionOrder.length > 0 && editedDivisionOrder.length === 0) {
+            setEditedDivisionOrder([...divisionOrder]);
+        }
+    }, [divisionOrder, editedDivisionOrder.length]);
+
     // Track changes
     useEffect(() => {
         if (navigationPages.length === 0 || editedPages.length === 0) {
@@ -254,6 +250,16 @@ export const SettingsPage = () => {
         const changed = JSON.stringify(navigationPages) !== JSON.stringify(editedPages);
         setHasChanges(changed);
     }, [navigationPages, editedPages]);
+
+    // Track division order changes
+    useEffect(() => {
+        if (divisionOrder.length === 0 || editedDivisionOrder.length === 0) {
+            setHasDivisionOrderChanges(false);
+            return;
+        }
+        const changed = JSON.stringify(divisionOrder) !== JSON.stringify(editedDivisionOrder);
+        setHasDivisionOrderChanges(changed);
+    }, [divisionOrder, editedDivisionOrder]);
 
     const handleIconChange = useCallback((departmentId: string, newIcon: string) => {
         setEditedPages(prev => prev.map(page =>
@@ -294,6 +300,80 @@ export const SettingsPage = () => {
             setIsSaving(false);
         }
     }, [editedPages, hasChanges, queryClient]);
+
+    // Division order handlers
+    const handleAddDivision = useCallback(() => {
+        if (!newDivision.trim()) return;
+        const trimmed = newDivision.trim().toUpperCase();
+        if (editedDivisionOrder.includes(trimmed)) return;
+        setEditedDivisionOrder(prev => [...prev, trimmed]);
+        setNewDivision("");
+        setAddDivisionModalOpen(false);
+    }, [newDivision, editedDivisionOrder]);
+
+    const handleOpenDeleteDivision = useCallback((division: string) => {
+        // Check if any pages are in this division
+        const pagesInDivision = editedPages.filter(p => p.division === division);
+        setDivisionToDelete(division);
+
+        if (pagesInDivision.length > 0) {
+            // Set default target to first available division
+            const availableDivisions = editedDivisionOrder.filter(d => d !== division);
+            setTargetDivision(availableDivisions[0] || "");
+            setDeleteDivisionModalOpen(true);
+        } else {
+            // No pages, remove directly
+            setEditedDivisionOrder(prev => prev.filter(d => d !== division));
+        }
+    }, [editedPages, editedDivisionOrder]);
+
+    const handleConfirmDeleteDivision = useCallback(() => {
+        if (!divisionToDelete || !targetDivision) return;
+
+        // Move pages to target division
+        setEditedPages(prev => prev.map(page =>
+            page.division === divisionToDelete ? { ...page, division: targetDivision } : page
+        ));
+
+        // Remove the division
+        setEditedDivisionOrder(prev => prev.filter(d => d !== divisionToDelete));
+
+        // Close modal and reset state
+        setDeleteDivisionModalOpen(false);
+        setDivisionToDelete(null);
+        setTargetDivision("");
+    }, [divisionToDelete, targetDivision]);
+
+    const handleMoveDivision = useCallback((index: number, direction: "up" | "down") => {
+        setEditedDivisionOrder(prev => {
+            const newOrder = [...prev];
+            const newIndex = direction === "up" ? index - 1 : index + 1;
+            if (newIndex < 0 || newIndex >= newOrder.length) return prev;
+            [newOrder[index], newOrder[newIndex]] = [newOrder[newIndex], newOrder[index]];
+            return newOrder;
+        });
+    }, []);
+
+    const handleSaveDivisionOrder = useCallback(async () => {
+        if (!hasDivisionOrderChanges) return;
+
+        setIsSaving(true);
+        try {
+            const result = await updateDivisionOrder(editedDivisionOrder);
+
+            if (!result.success) {
+                console.error("Failed to save division order:", result.error);
+                return;
+            }
+
+            queryClient.invalidateQueries({ queryKey: directoryKeys.combined() });
+            setHasDivisionOrderChanges(false);
+        } catch (err) {
+            console.error("Failed to save division order:", err);
+        } finally {
+            setIsSaving(false);
+        }
+    }, [editedDivisionOrder, hasDivisionOrderChanges, queryClient]);
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
@@ -358,14 +438,18 @@ export const SettingsPage = () => {
                                             <p className="text-sm text-tertiary">Select your preferred theme.</p>
                                         </div>
 
-                                        <RadioGroups.RadioButton
-                                            aria-label="Theme"
-                                            orientation="horizontal"
-                                            value={theme}
-                                            onChange={(value) => setTheme(value)}
-                                            items={themeItems}
-                                            className="flex-nowrap overflow-x-auto"
-                                        />
+                                        {mounted ? (
+                                            <RadioGroups.RadioButton
+                                                aria-label="Theme"
+                                                orientation="horizontal"
+                                                value={theme}
+                                                onChange={(value) => setTheme(value)}
+                                                items={themeItems}
+                                                className="flex-nowrap overflow-x-auto"
+                                            />
+                                        ) : (
+                                            <div className="h-[88px]" />
+                                        )}
                                     </div>
 
                                     {/* Sidebar Setting */}
@@ -375,14 +459,18 @@ export const SettingsPage = () => {
                                             <p className="text-sm text-tertiary">Choose the default sidebar state.</p>
                                         </div>
 
-                                        <RadioGroups.RadioButton
-                                            aria-label="Sidebar default state"
-                                            orientation="horizontal"
-                                            value={sidebarDefaultExpanded ? "expanded" : "collapsed"}
-                                            onChange={handleSidebarDefaultChange}
-                                            items={sidebarItems}
-                                            className="flex-nowrap overflow-x-auto"
-                                        />
+                                        {mounted ? (
+                                            <RadioGroups.RadioButton
+                                                aria-label="Sidebar default state"
+                                                orientation="horizontal"
+                                                value={sidebarDefaultExpanded ? "expanded" : "collapsed"}
+                                                onChange={handleSidebarDefaultChange}
+                                                items={sidebarItems}
+                                                className="flex-nowrap overflow-x-auto"
+                                            />
+                                        ) : (
+                                            <div className="h-[88px]" />
+                                        )}
                                     </div>
                                 </div>
                             </>
@@ -390,6 +478,206 @@ export const SettingsPage = () => {
 
                         {selectedTab === "admin" && isAdmin && (
                             <>
+                                {/* Division Order Section */}
+                                <div>
+                                    <div className="flex flex-1 flex-col justify-center gap-0.5 self-stretch pb-5">
+                                        <div className="flex items-center justify-between">
+                                            <h2 className="text-lg font-semibold text-primary">Division Order</h2>
+                                            {hasDivisionOrderChanges && (
+                                                <Button
+                                                    color="primary"
+                                                    size="sm"
+                                                    iconLeading={Save01}
+                                                    onClick={handleSaveDivisionOrder}
+                                                    isDisabled={isSaving}
+                                                >
+                                                    {isSaving ? "Saving..." : "Save Order"}
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <p className="text-sm text-tertiary">
+                                            Manage divisions and their display order in the navigation sidebar.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-5">
+                                    {editedDivisionOrder.map((division, index) => {
+                                        const pagesInDivision = editedPages.filter(p => p.division === division);
+                                        return (
+                                            <div
+                                                key={division}
+                                                className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(200px,280px)_1fr] lg:gap-16"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
+                                                        <span className="text-sm font-semibold text-fg-quaternary">{index + 1}</span>
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <p className="text-sm font-medium text-primary">{division}</p>
+                                                        <p className="text-xs text-tertiary">{pagesInDivision.length} page{pagesInDivision.length !== 1 ? "s" : ""}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleMoveDivision(index, "up")}
+                                                        disabled={index === 0}
+                                                        className="rounded p-1.5 text-fg-quaternary transition hover:bg-secondary hover:text-fg-secondary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-fg-quaternary"
+                                                        title="Move up"
+                                                    >
+                                                        <ChevronUp className="size-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleMoveDivision(index, "down")}
+                                                        disabled={index === editedDivisionOrder.length - 1}
+                                                        className="rounded p-1.5 text-fg-quaternary transition hover:bg-secondary hover:text-fg-secondary disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-fg-quaternary"
+                                                        title="Move down"
+                                                    >
+                                                        <ChevronDown className="size-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenDeleteDivision(division)}
+                                                        className="rounded p-1.5 text-fg-quaternary transition hover:bg-error-secondary hover:text-error-primary"
+                                                        title="Remove"
+                                                    >
+                                                        <X className="size-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(200px,280px)_1fr] lg:gap-16">
+                                        <Button
+                                            color="secondary"
+                                            size="sm"
+                                            iconLeading={Plus}
+                                            onClick={() => setAddDivisionModalOpen(true)}
+                                        >
+                                            Add Division
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Add Division Modal */}
+                                <DialogTrigger isOpen={addDivisionModalOpen} onOpenChange={setAddDivisionModalOpen}>
+                                    <Button id="add-division-modal-trigger" className="hidden" />
+                                    <ModalOverlay>
+                                        <Modal className="max-w-md">
+                                            <Dialog className="w-full">
+                                                <div className="w-full rounded-2xl bg-primary p-6 shadow-xl ring-1 ring-secondary_alt">
+                                                    <p className="text-lg font-semibold text-primary">Add Division</p>
+                                                    <p className="mt-1 text-sm text-tertiary">Enter a name for the new division.</p>
+
+                                                    <div className="mt-4">
+                                                        <Input
+                                                            label="Division Name"
+                                                            aria-label="New division name"
+                                                            size="sm"
+                                                            placeholder="DIVISION_NAME"
+                                                            value={newDivision}
+                                                            onChange={setNewDivision}
+                                                            onKeyDown={(e) => e.key === "Enter" && handleAddDivision()}
+                                                        />
+                                                    </div>
+
+                                                    <div className="mt-6 flex gap-3">
+                                                        <Button
+                                                            color="secondary"
+                                                            className="flex-1"
+                                                            onClick={() => {
+                                                                setAddDivisionModalOpen(false);
+                                                                setNewDivision("");
+                                                            }}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                        <Button
+                                                            color="primary"
+                                                            className="flex-1"
+                                                            onClick={handleAddDivision}
+                                                            isDisabled={!newDivision.trim()}
+                                                        >
+                                                            Add Division
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </Dialog>
+                                        </Modal>
+                                    </ModalOverlay>
+                                </DialogTrigger>
+
+                                {/* Delete Division Modal */}
+                                <DialogTrigger isOpen={deleteDivisionModalOpen} onOpenChange={(open) => {
+                                    setDeleteDivisionModalOpen(open);
+                                    if (!open) {
+                                        setDivisionToDelete(null);
+                                        setTargetDivision("");
+                                    }
+                                }}>
+                                    <Button id="delete-division-modal-trigger" className="hidden" />
+                                    <ModalOverlay>
+                                        <Modal className="max-w-md">
+                                            <Dialog className="w-full">
+                                                <div className="w-full rounded-2xl bg-primary p-6 shadow-xl ring-1 ring-secondary_alt">
+                                                    <div className="flex flex-col items-center text-center">
+                                                        <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-warning_secondary">
+                                                            <AlertTriangle className="size-6 text-fg-warning_primary" />
+                                                        </div>
+                                                        <p className="text-lg font-semibold text-primary">Delete &ldquo;{divisionToDelete}&rdquo;</p>
+                                                        <p className="mt-2 text-sm text-tertiary">
+                                                            This division has {editedPages.filter(p => p.division === divisionToDelete).length} page(s). Select a division to move them to.
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="mt-4">
+                                                        <NativeSelect
+                                                            label="Move pages to"
+                                                            aria-label="Target division"
+                                                            value={targetDivision}
+                                                            onChange={(e) => setTargetDivision(e.target.value)}
+                                                            options={editedDivisionOrder
+                                                                .filter(d => d !== divisionToDelete)
+                                                                .map(div => ({
+                                                                    label: div.charAt(0) + div.slice(1).toLowerCase(),
+                                                                    value: div,
+                                                                }))}
+                                                        />
+                                                    </div>
+
+                                                    <div className="mt-6 flex gap-3">
+                                                        <Button
+                                                            color="secondary"
+                                                            className="flex-1"
+                                                            onClick={() => {
+                                                                setDeleteDivisionModalOpen(false);
+                                                                setDivisionToDelete(null);
+                                                                setTargetDivision("");
+                                                            }}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                        <Button
+                                                            color="primary-destructive"
+                                                            className="flex-1"
+                                                            onClick={handleConfirmDeleteDivision}
+                                                            isDisabled={!targetDivision}
+                                                        >
+                                                            Delete Division
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </Dialog>
+                                        </Modal>
+                                    </ModalOverlay>
+                                </DialogTrigger>
+
+                                <hr className="border-secondary" />
+
                                 {/* Navigation Pages Section */}
                                 <div>
                                     <div className="flex flex-1 flex-col justify-center gap-0.5 self-stretch pb-5">
@@ -444,12 +732,10 @@ export const SettingsPage = () => {
                                                                 aria-label="Division"
                                                                 value={page.division || "SQUAD"}
                                                                 onChange={(e) => handleDivisionChange(page.department_id, e.target.value)}
-                                                                options={[
-                                                                    { label: "Creative", value: "CREATIVE" },
-                                                                    { label: "Strategy", value: "STRATEGY" },
-                                                                    { label: "Revenue", value: "REVENUE" },
-                                                                    { label: "Squad", value: "SQUAD" },
-                                                                ]}
+                                                                options={editedDivisionOrder.map(div => ({
+                                                                    label: div.charAt(0) + div.slice(1).toLowerCase(),
+                                                                    value: div,
+                                                                }))}
                                                             />
                                                         </div>
 
