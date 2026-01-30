@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useUrlParams } from "@/hooks/use-url-params";
 import { useAuth } from "@/providers/auth-provider";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import type { Frame } from "@/utils/supabase/types";
 import { cx } from "@/utils/cx";
+
+const FRAME_VALIDATION_KEY = process.env.NEXT_PUBLIC_FRAME_VALIDATION_KEY;
 
 type IframeViewProps = {
     frame: Frame;
@@ -16,6 +18,7 @@ export const IframeView = ({ frame, pathSegments = [] }: IframeViewProps) => {
     const urlParams = useUrlParams();
     const { worker, userEmail } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
 
     const iframeSrc = useMemo(() => {
         if (!frame.iframe_url) return "";
@@ -92,9 +95,28 @@ export const IframeView = ({ frame, pathSegments = [] }: IframeViewProps) => {
         return () => clearTimeout(timer);
     }, [frame.id]);
 
+    // Handle frame validation key postMessage communication
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            // Check if the message contains the frame validation key
+            if (event.data === FRAME_VALIDATION_KEY && FRAME_VALIDATION_KEY) {
+                console.log("[IframeView] Frame validation key received:", true);
+
+                // Respond back with the same key
+                if (iframeRef.current?.contentWindow) {
+                    iframeRef.current.contentWindow.postMessage(FRAME_VALIDATION_KEY, "*");
+                }
+            }
+        };
+
+        window.addEventListener("message", handleMessage);
+        return () => window.removeEventListener("message", handleMessage);
+    }, []);
+
     return (
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-2xl border-x border-t border-secondary_alt bg-primary">
             <iframe
+                ref={iframeRef}
                 title={frame.name}
                 src={iframeSrc}
                 className={cx(
