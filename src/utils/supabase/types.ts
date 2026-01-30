@@ -41,6 +41,7 @@ export type NavigationPage = {
     slug: string;
     title: string;
     icon: string;
+    division?: string;
 };
 
 export type ShConfig<T = unknown> = {

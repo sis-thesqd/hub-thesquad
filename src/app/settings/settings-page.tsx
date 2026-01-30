@@ -128,21 +128,74 @@ export const SettingsPage = () => {
 
     // Build department items for sidebar
     const departmentItems = useMemo(() => {
-        return navigationPages.map((page) => {
-            const department = departments.find((dept) => {
-                const deptSlug = dept.name
-                    ?.toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/(^-|-$)+/g, "");
-                return deptSlug === page.slug;
-            });
-            return {
-                label: page.title,
-                href: department ? `/${department.id}` : "#",
-                icon: getIconByName(page.icon, FolderClosed),
-            };
-        }).filter((item) => item.href !== "#");
+        // Hard-coded division mappings
+        const divisionMap: Record<string, string> = {
+            "Design Squad": "CREATIVE",
+            "Video Squad": "CREATIVE",
+            "Creative Direction Squad": "CREATIVE",
+            "Creative Products Division": "CREATIVE",
+            
+            "Social Media Squad": "STRATEGY",
+            "Brand Squad": "STRATEGY",
+            "Web Squad": "STRATEGY",
+            "Strategy Products Division": "STRATEGY",
+            
+            "Sales Squad": "REVENUE",
+            "Customer Experience Squad": "REVENUE",
+            "Marketing Squad": "REVENUE",
+            
+            "C-Suite": "SQUAD",
+            "Exec Squad": "SQUAD",
+            "Remix": "SQUAD",
+            "Systems Integration Squad": "SQUAD",
+        };
+
+        // Group pages by division
+        const groupedPages: Record<string, typeof navigationPages> = {};
+        navigationPages.forEach((page) => {
+            const division = divisionMap[page.title] || "SQUAD";
+            if (!groupedPages[division]) {
+                groupedPages[division] = [];
+            }
+            groupedPages[division].push(page);
+        });
+
+        // Define division order
+        const divisionOrder = ["CREATIVE", "STRATEGY", "REVENUE", "SQUAD"];
+        
+        const items: any[] = [];
+        
+        divisionOrder.forEach((division) => {
+            const pagesInDivision = groupedPages[division];
+            if (pagesInDivision && pagesInDivision.length > 0) {
+                // Add section heading
+                items.push({
+                    label: division,
+                    isHeading: true,
+                });
+                
+                // Add pages in this division
+                pagesInDivision.forEach((page) => {
+                    const department = departments.find((dept) => {
+                        const deptSlug = dept.name
+                            ?.toLowerCase()
+                            .trim()
+                            .replace(/[^a-z0-9]+/g, "-")
+                            .replace(/(^-|-$)+/g, "");
+                        return deptSlug === page.slug;
+                    });
+                    if (department) {
+                        items.push({
+                            label: page.title,
+                            href: `/${department.id}`,
+                            icon: getIconByName(page.icon, FolderClosed),
+                        });
+                    }
+                });
+            }
+        });
+
+        return items;
     }, [departments, navigationPages]);
 
     // Handle command menu selection
@@ -211,6 +264,12 @@ export const SettingsPage = () => {
     const handleSlugChange = useCallback((departmentId: string, newSlug: string) => {
         setEditedPages(prev => prev.map(page =>
             page.department_id === departmentId ? { ...page, slug: newSlug } : page
+        ));
+    }, []);
+
+    const handleDivisionChange = useCallback((departmentId: string, newDivision: string) => {
+        setEditedPages(prev => prev.map(page =>
+            page.department_id === departmentId ? { ...page, division: newDivision } : page
         ));
     }, []);
 
@@ -379,6 +438,21 @@ export const SettingsPage = () => {
                                                     </div>
 
                                                     <div className="flex flex-wrap items-end gap-4">
+                                                        <div className="w-44">
+                                                            <NativeSelect
+                                                                label="Division"
+                                                                aria-label="Division"
+                                                                value={page.division || "SQUAD"}
+                                                                onChange={(e) => handleDivisionChange(page.department_id, e.target.value)}
+                                                                options={[
+                                                                    { label: "Creative", value: "CREATIVE" },
+                                                                    { label: "Strategy", value: "STRATEGY" },
+                                                                    { label: "Revenue", value: "REVENUE" },
+                                                                    { label: "Squad", value: "SQUAD" },
+                                                                ]}
+                                                            />
+                                                        </div>
+
                                                         <div className="w-56">
                                                             <Select.ComboBox
                                                                 label="Department Icon"

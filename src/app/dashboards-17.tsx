@@ -100,15 +100,67 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     }, [initialDepartmentId]);
 
     const departmentItems = useMemo(() => {
-        return navigationPages.map((page) => {
-            const department = departments.find((dept) => slugify(dept.name) === page.slug);
+        // Hard-coded division mappings
+        const divisionMap: Record<string, string> = {
+            "Design Squad": "CREATIVE",
+            "Video Squad": "CREATIVE",
+            "Creative Direction Squad": "CREATIVE",
+            "Creative Products Division": "CREATIVE",
+            
+            "Social Media Squad": "STRATEGY",
+            "Brand Squad": "STRATEGY",
+            "Web Squad": "STRATEGY",
+            "Strategy Products Division": "STRATEGY",
+            
+            "Sales Squad": "REVENUE",
+            "Customer Experience Squad": "REVENUE",
+            "Marketing Squad": "REVENUE",
+            
+            "C-Suite": "SQUAD",
+            "Exec Squad": "SQUAD",
+            "Remix": "SQUAD",
+            "Systems Integration Squad": "SQUAD",
+        };
 
-            return {
-                label: page.title,
-                href: department ? `/${department.id}` : "#",
-                icon: getIconByName(page.icon, FolderClosed),
-            };
-        }).filter((item) => item.href !== "#");
+        // Group pages by division
+        const groupedPages: Record<string, typeof navigationPages> = {};
+        navigationPages.forEach((page) => {
+            const division = divisionMap[page.title] || "SQUAD";
+            if (!groupedPages[division]) {
+                groupedPages[division] = [];
+            }
+            groupedPages[division].push(page);
+        });
+
+        // Define division order
+        const divisionOrder = ["CREATIVE", "STRATEGY", "REVENUE", "SQUAD"];
+        
+        const items: any[] = [];
+        
+        divisionOrder.forEach((division) => {
+            const pagesInDivision = groupedPages[division];
+            if (pagesInDivision && pagesInDivision.length > 0) {
+                // Add section heading
+                items.push({
+                    label: division,
+                    isHeading: true,
+                });
+                
+                // Add pages in this division
+                pagesInDivision.forEach((page) => {
+                    const department = departments.find((dept) => slugify(dept.name) === page.slug);
+                    if (department) {
+                        items.push({
+                            label: page.title,
+                            href: `/${department.id}`,
+                            icon: getIconByName(page.icon, FolderClosed),
+                        });
+                    }
+                });
+            }
+        });
+
+        return items;
     }, [departments, navigationPages]);
 
     // Department items with icons for modals

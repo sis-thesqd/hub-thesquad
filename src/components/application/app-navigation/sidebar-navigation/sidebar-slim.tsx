@@ -126,7 +126,26 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                 </div>
 
                 <ul className={cx("mt-4 flex flex-col gap-0.5", isCollapsed ? "px-2" : "px-2")}>
-                    {items.map((item) => {
+                    {items.map((item, index) => {
+                        // Handle section headings
+                        if (item.isHeading) {
+                            if (isCollapsed) {
+                                // Show separator line in collapsed mode
+                                return (
+                                    <li key={`heading-${item.label}-${index}`} className="my-1">
+                                        <div className="h-px bg-border-secondary" />
+                                    </li>
+                                );
+                            }
+                            return (
+                                <li key={`heading-${item.label}-${index}`} className="mt-3 mb-1 px-2">
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-fg-quaternary">
+                                        {item.label}
+                                    </p>
+                                </li>
+                            );
+                        }
+
                         const Icon = item.icon;
                         const isCurrent = currentItem?.href === item.href;
                         const hrefWithParams = item.href ? appendUrlParams(item.href) : item.href;

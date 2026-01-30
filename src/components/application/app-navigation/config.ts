@@ -13,6 +13,8 @@ export type NavItemType = {
     items?: { label: string; href: string; icon?: FC<{ className?: string }>; badge?: ReactNode }[];
     /** Whether this nav item is a divider. */
     divider?: boolean;
+    /** Whether this nav item is a section heading. */
+    isHeading?: boolean;
 };
 
 export type NavItemDividerType = Omit<NavItemType, "icon" | "label" | "divider"> & {
@@ -20,4 +22,9 @@ export type NavItemDividerType = Omit<NavItemType, "icon" | "label" | "divider">
     label?: string;
     /** Whether this nav item is a divider. */
     divider: true;
+};
+
+export type NavItemHeadingType = Omit<NavItemType, "icon" | "href" | "badge" | "items" | "isHeading"> & {
+    /** Whether this nav item is a section heading. */
+    isHeading: true;
 };
