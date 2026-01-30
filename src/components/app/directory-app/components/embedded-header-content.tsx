@@ -7,6 +7,7 @@ import type { Frame } from "@/utils/supabase/types";
 import { UrlParamsInfoSlideout } from "./url-params-info-slideout";
 import { useUrlParams } from "@/hooks/use-url-params";
 import { useClipboard } from "@/hooks/use-clipboard";
+import { useAuth } from "@/providers/auth-provider";
 
 type EmbeddedHeaderContentProps = {
     activeFrame: Frame;
@@ -25,6 +26,7 @@ export const EmbeddedHeaderContent = ({
 }: EmbeddedHeaderContentProps) => {
     const urlParams = useUrlParams();
     const clipboard = useClipboard();
+    const { worker, userEmail } = useAuth();
 
     // Build URL with merged params and path segments (same logic as IframeView)
     const iframeUrlWithParams = useMemo(() => {
@@ -48,11 +50,45 @@ export const EmbeddedHeaderContent = ({
             urlParams.forEach((value, key) => {
                 url.searchParams.set(key, value);
             });
+
+            // Automatically inject worker/user information as URL parameters
+            if (worker) {
+                // Add user ID
+                if (worker.id && !url.searchParams.has('user_id')) {
+                    url.searchParams.set('user_id', worker.id);
+                }
+                
+                // Add email (prefer work email, fallback to personal or auth email)
+                const email = worker.work_email || worker.personal_email || userEmail;
+                if (email && !url.searchParams.has('email')) {
+                    url.searchParams.set('email', email);
+                }
+                
+                // Add name (prefer display name, fallback to combined given/family names)
+                const name = worker.display_name || 
+                    [worker.preferred_given_name || worker.given_name, worker.preferred_family_name || worker.family_name]
+                        .filter(Boolean)
+                        .join(' ');
+                if (name && !url.searchParams.has('name')) {
+                    url.searchParams.set('name', name);
+                }
+                
+                // Add department ID
+                if (worker.department_id && !url.searchParams.has('department_id')) {
+                    url.searchParams.set('department_id', worker.department_id);
+                }
+                
+                // Add title
+                if (worker.title && !url.searchParams.has('title')) {
+                    url.searchParams.set('title', worker.title);
+                }
+            }
+
             return url.toString();
         } catch {
             return urlString;
         }
-    }, [activeFrame.iframe_url, urlParams, pathSegments]);
+    }, [activeFrame.iframe_url, urlParams, pathSegments, worker, userEmail]);
 
     const handleOpenInNewTab = () => {
         window.open(iframeUrlWithParams, "_blank", "noopener,noreferrer");

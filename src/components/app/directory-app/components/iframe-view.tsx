@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useUrlParams } from "@/hooks/use-url-params";
+import { useAuth } from "@/providers/auth-provider";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import type { Frame } from "@/utils/supabase/types";
 import { cx } from "@/utils/cx";
@@ -13,6 +14,7 @@ type IframeViewProps = {
 
 export const IframeView = ({ frame, pathSegments = [] }: IframeViewProps) => {
     const urlParams = useUrlParams();
+    const { worker, userEmail } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
 
     const iframeSrc = useMemo(() => {
@@ -40,12 +42,45 @@ export const IframeView = ({ frame, pathSegments = [] }: IframeViewProps) => {
                 url.searchParams.set(key, value);
             });
 
+            // Automatically inject worker/user information as URL parameters
+            if (worker) {
+                // Add user ID
+                if (worker.id && !url.searchParams.has('user_id')) {
+                    url.searchParams.set('user_id', worker.id);
+                }
+                
+                // Add email (prefer work email, fallback to personal or auth email)
+                const email = worker.work_email || worker.personal_email || userEmail;
+                if (email && !url.searchParams.has('email')) {
+                    url.searchParams.set('email', email);
+                }
+                
+                // Add name (prefer display name, fallback to combined given/family names)
+                const name = worker.display_name || 
+                    [worker.preferred_given_name || worker.given_name, worker.preferred_family_name || worker.family_name]
+                        .filter(Boolean)
+                        .join(' ');
+                if (name && !url.searchParams.has('name')) {
+                    url.searchParams.set('name', name);
+                }
+                
+                // Add department ID
+                if (worker.department_id && !url.searchParams.has('department_id')) {
+                    url.searchParams.set('department_id', worker.department_id);
+                }
+                
+                // Add title
+                if (worker.title && !url.searchParams.has('title')) {
+                    url.searchParams.set('title', worker.title);
+                }
+            }
+
             return url.toString();
         } catch {
             // If iframe_url is not a valid URL, return it as-is
             return urlString;
         }
-    }, [frame.iframe_url, urlParams, pathSegments]);
+    }, [frame.iframe_url, urlParams, pathSegments, worker, userEmail]);
 
     // Reset loading state when frame changes
     useEffect(() => {
