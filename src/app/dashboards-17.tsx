@@ -392,15 +392,15 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
     const handleFullscreenClose = useCallback((open: boolean) => {
         setFullscreenOpen(open);
         if (!open) {
-            // Remove fullscreen param from URL
+            // Remove fullscreen param from URL without triggering Next.js navigation
             const newParams = new URLSearchParams(urlParams.toString());
             newParams.delete("fullscreen");
             const newUrl = newParams.toString()
                 ? `${window.location.pathname}?${newParams.toString()}`
                 : window.location.pathname;
-            router.replace(newUrl);
+            window.history.replaceState(null, "", newUrl);
         }
-    }, [urlParams, router]);
+    }, [urlParams]);
 
     const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
         const entriesById = createEntriesMap(entries);

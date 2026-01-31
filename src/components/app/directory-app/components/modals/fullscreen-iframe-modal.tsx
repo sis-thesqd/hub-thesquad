@@ -127,7 +127,7 @@ export const FullscreenIframeModal = ({
                             <button
                                 type="button"
                                 onClick={() => onOpenChange(false)}
-                                className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-lg bg-primary/80 text-fg-quaternary shadow-sm ring-1 ring-secondary backdrop-blur-sm transition hover:bg-primary hover:text-fg-secondary"
+                                className="absolute top-3 right-3 z-10 flex size-8 cursor-pointer items-center justify-center rounded-lg bg-primary/80 text-fg-quaternary shadow-sm ring-1 ring-secondary backdrop-blur-sm transition hover:bg-primary hover:text-fg-secondary"
                                 title="Close fullscreen"
                             >
                                 <X className="size-4" />
