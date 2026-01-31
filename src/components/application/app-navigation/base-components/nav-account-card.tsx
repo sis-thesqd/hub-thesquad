@@ -4,7 +4,7 @@ import type { FC, HTMLAttributes } from "react";
 import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Placement } from "@react-types/overlays";
-import { ChevronSelectorVertical, LogOut01, Settings01 } from "@untitledui/icons";
+import { ChevronSelectorVertical, LogOut01, Settings01, Star01 } from "@untitledui/icons";
 import { useFocusManager } from "react-aria";
 import type { DialogProps as AriaDialogProps } from "react-aria-components";
 import { Button as AriaButton, Dialog as AriaDialog, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover, OverlayTriggerStateContext } from "react-aria-components";

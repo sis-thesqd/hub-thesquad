@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Monitor01, Moon01, Sun, Save01, FolderClosed, LayoutLeft, LayoutRight, ChevronUp, ChevronDown, X, Plus, AlertTriangle } from "@untitledui/icons";
+import { Monitor01, Moon01, Sun, Save01, FolderClosed, LayoutLeft, LayoutRight, ChevronUp, ChevronDown, X, Plus, AlertTriangle, Maximize01, Minimize01 } from "@untitledui/icons";
 import * as AllIcons from "@untitledui/icons";
 import { useTheme } from "next-themes";
 import { useQueryClient } from "@tanstack/react-query";
@@ -70,6 +70,23 @@ const sidebarItems = [
     },
 ];
 
+const fullscreenItems = [
+    {
+        value: "off",
+        title: "Off",
+        secondaryTitle: "",
+        description: "Open apps in normal view.",
+        icon: Minimize01,
+    },
+    {
+        value: "on",
+        title: "On",
+        secondaryTitle: "",
+        description: "Open apps in fullscreen.",
+        icon: Maximize01,
+    },
+];
+
 // Get all icon names from @untitledui/icons (computed once at module level)
 const ALL_ICON_NAMES = Object.keys(AllIcons).filter(
     key => typeof (AllIcons as Record<string, unknown>)[key] === 'function'
@@ -100,6 +117,7 @@ export const SettingsPage = () => {
     const [commandMenuOpen, setCommandMenuOpen] = useState(false);
     const [selectedTab, setSelectedTab] = useState<string>("app-settings");
     const [sidebarDefaultExpanded, setSidebarDefaultExpanded] = useState<boolean>(true);
+    const [fullscreenDefault, setFullscreenDefault] = useState<boolean>(false);
     const [newDivision, setNewDivision] = useState("");
     const [addDivisionModalOpen, setAddDivisionModalOpen] = useState(false);
     const [deleteDivisionModalOpen, setDeleteDivisionModalOpen] = useState(false);
@@ -119,6 +137,13 @@ export const SettingsPage = () => {
         setSidebarDefaultExpanded(stored !== "false");
     }, []);
 
+    // Load fullscreen default preference from localStorage
+    useEffect(() => {
+        const stored = localStorage.getItem(FULLSCREEN_DEFAULT_KEY);
+        // Default to false if not set
+        setFullscreenDefault(stored === "true");
+    }, []);
+
     const handleSidebarDefaultChange = useCallback((value: string) => {
         const expanded = value === "expanded";
         setSidebarDefaultExpanded(expanded);
@@ -127,6 +152,12 @@ export const SettingsPage = () => {
         localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(!expanded));
         // Reload to apply the change immediately
         window.location.reload();
+    }, []);
+
+    const handleFullscreenDefaultChange = useCallback((value: string) => {
+        const enabled = value === "on";
+        setFullscreenDefault(enabled);
+        localStorage.setItem(FULLSCREEN_DEFAULT_KEY, String(enabled));
     }, []);
 
     // Check if user is admin (Systems Integration Squad or title contains "Systems")
@@ -471,6 +502,27 @@ export const SettingsPage = () => {
                                                 value={sidebarDefaultExpanded ? "expanded" : "collapsed"}
                                                 onChange={handleSidebarDefaultChange}
                                                 items={sidebarItems}
+                                                className="flex-nowrap overflow-x-auto"
+                                            />
+                                        ) : (
+                                            <div className="h-[88px]" />
+                                        )}
+                                    </div>
+
+                                    {/* Fullscreen Default Setting */}
+                                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(200px,280px)_1fr] lg:gap-16">
+                                        <div className="flex flex-col gap-1">
+                                            <p className="text-sm font-medium text-primary">Fullscreen Apps</p>
+                                            <p className="text-sm text-tertiary">Open apps in fullscreen by default.</p>
+                                        </div>
+
+                                        {mounted ? (
+                                            <RadioGroups.RadioButton
+                                                aria-label="Fullscreen default"
+                                                orientation="horizontal"
+                                                value={fullscreenDefault ? "on" : "off"}
+                                                onChange={handleFullscreenDefaultChange}
+                                                items={fullscreenItems}
                                                 className="flex-nowrap overflow-x-auto"
                                             />
                                         ) : (

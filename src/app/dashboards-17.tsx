@@ -33,6 +33,8 @@ const DirectoryCommandMenu = dynamic(
     { ssr: false }
 );
 
+const FULLSCREEN_DEFAULT_KEY = "fullscreen-default";
+
 interface Dashboard17Props {
     initialDepartmentSlug?: string;
     initialPath?: string[];
@@ -57,6 +59,8 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
     const [fullscreenOpen, setFullscreenOpen] = useState(false);
     const [fullscreenFrame, setFullscreenFrame] = useState<Frame | null>(null);
     const [fullscreenPathSegments, setFullscreenPathSegments] = useState<string[]>([]);
+    const [fullscreenDefault, setFullscreenDefault] = useState(false);
+    const [userClosedFullscreen, setUserClosedFullscreen] = useState(false);
 
     // Favorites hook
     const {
@@ -123,9 +127,27 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
         setSelectedDepartmentId(departmentId ?? "");
     }, [initialDepartmentSlug, departments, navigationPages]);
 
-    // Auto-open fullscreen from URL param
+    // Load fullscreen default setting from localStorage
     useEffect(() => {
-        if (fullscreenParam === "true" && activeEntryInfo?.isPage && activeEntryInfo.frameId && !fullscreenOpen) {
+        const stored = localStorage.getItem(FULLSCREEN_DEFAULT_KEY);
+        setFullscreenDefault(stored === "true");
+    }, []);
+
+    // Reset userClosedFullscreen when navigating to a different page
+    useEffect(() => {
+        setUserClosedFullscreen(false);
+    }, [activeEntryInfo?.frameId]);
+
+    // Auto-open fullscreen from URL param or default setting
+    useEffect(() => {
+        // Skip if not on a page or already in fullscreen
+        if (!activeEntryInfo?.isPage || !activeEntryInfo.frameId || fullscreenOpen) return;
+
+        // Open fullscreen if URL param is set OR if default setting is enabled and user hasn't closed it
+        const shouldOpenFromParam = fullscreenParam === "true";
+        const shouldOpenFromDefault = fullscreenDefault && !userClosedFullscreen;
+
+        if (shouldOpenFromParam || shouldOpenFromDefault) {
             const frame = frames.find((f) => f.id === activeEntryInfo.frameId);
             if (frame) {
                 setFullscreenFrame(frame);
@@ -133,7 +155,7 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
                 setFullscreenOpen(true);
             }
         }
-    }, [fullscreenParam, activeEntryInfo, frames, fullscreenOpen]);
+    }, [fullscreenParam, activeEntryInfo, frames, fullscreenOpen, fullscreenDefault, userClosedFullscreen]);
 
     const departmentItems = useMemo(() => {
         // Group pages by division (using page.division from config)
@@ -403,6 +425,8 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
     const handleFullscreenClose = useCallback((open: boolean) => {
         setFullscreenOpen(open);
         if (!open) {
+            // Mark that user manually closed fullscreen to prevent auto-reopening
+            setUserClosedFullscreen(true);
             // Remove fullscreen param from URL without triggering Next.js navigation
             const newParams = new URLSearchParams(urlParams.toString());
             newParams.delete("fullscreen");
