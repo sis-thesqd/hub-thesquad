@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type React from "react";
 import type { DirectoryEntry, Frame, RipplingDepartment } from "@/utils/supabase/types";
 import type { FormState } from "../types";
@@ -69,117 +69,130 @@ export const useHeaderContentEffect = ({
     iframePathSegments = [],
     onFullscreen,
 }: UseHeaderContentEffectParams) => {
+    // Use refs for callbacks that shouldn't trigger effect re-runs
+    const onFullscreenRef = useRef(onFullscreen);
+    onFullscreenRef.current = onFullscreen;
+
+    // Page view effect - only runs when viewing a page (activeFrame exists)
     useEffect(() => {
-        if (variant === "embedded" && onHeaderContentChange) {
-            if (activeFrame && activeEntry) {
-                // Page view header
-                const handleEditClick = async () => {
-                    setPageForm({
-                        name: activeFrame.name,
+        if (variant !== "embedded" || !onHeaderContentChange || !activeFrame || !activeEntry) {
+            return;
+        }
+
+        // Page view header
+        const handleEditClick = async () => {
+            setPageForm({
+                name: activeFrame.name,
+                slug: activeEntry.slug,
+                iframeUrl: activeFrame.iframe_url ?? "",
+                description: activeFrame.description ?? "",
+                emoji: activeEntry.emoji ?? "",
+            });
+            replaceSelectedItems(
+                pageDepartments,
+                activeFrame.department_ids.map((id) => {
+                    const deptItem = departmentItems.find((d) => d.id === id);
+                    return {
+                        id,
+                        label: deptItem?.label ?? id,
+                        icon: deptItem?.icon,
+                    };
+                }),
+            );
+            // Query ALL placements for this frame (across all departments)
+            const placementsResult = await getPagePlacements(activeFrame.id);
+            const seenIds = new Set<string>();
+            const placementItems = (placementsResult.data ?? [])
+                .map((entry) => {
+                    if (entry.parent_id === null) {
+                        // Root-level placement - use dept-root- format
+                        const dept = departments.find((d) => d.id === entry.department_id);
+                        return {
+                            id: `dept-root-${entry.department_id}`,
+                            label: `${dept?.name ?? entry.department_id} (Root)`,
+                        };
+                    }
+                    // Folder placement
+                    const folder = allFoldersById.get(entry.parent_id);
+                    return {
+                        id: entry.parent_id,
+                        label: folder?.name ?? entry.parent_id,
+                        emoji: folder?.emoji ?? undefined,
+                    };
+                })
+                .filter((item) => {
+                    if (seenIds.has(item.id)) return false;
+                    seenIds.add(item.id);
+                    return true;
+                });
+            replaceSelectedItems(pagePlacements, placementItems);
+            setEditPageOpen(true);
+        };
+
+        onHeaderContentChange(
+            <EmbeddedHeaderContent
+                activeFrame={activeFrame}
+                onEdit={handleEditClick}
+                onFullscreen={() => onFullscreenRef.current?.()}
+                isFavorite={favoriteEntryIds.includes(activeEntry.id)}
+                onToggleFavorite={() => toggleFavorite(activeEntry.id)}
+                pathSegments={iframePathSegments}
+            />
+        );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, departmentItems, allFoldersById, favoriteEntryIds, iframePathSegments]);
+
+    // Folder view effect - only runs when viewing a folder (no activeFrame)
+    useEffect(() => {
+        if (variant !== "embedded" || !onHeaderContentChange || activeFrame) {
+            return;
+        }
+
+        // Folder view header - action buttons only
+        onHeaderContentChange(
+            <EmbeddedFolderHeader
+                showEditButton={!!activeEntry && !activeEntry.frame_id}
+                onEditFolder={() => {
+                    if (!activeEntry) return;
+                    setFolderForm({
+                        ...emptyForm,
+                        name: activeEntry.name,
                         slug: activeEntry.slug,
-                        iframeUrl: activeFrame.iframe_url ?? "",
-                        description: activeFrame.description ?? "",
                         emoji: activeEntry.emoji ?? "",
                     });
-                    replaceSelectedItems(
-                        pageDepartments,
-                        activeFrame.department_ids.map((id) => {
-                            const deptItem = departmentItems.find((d) => d.id === id);
-                            return {
-                                id,
-                                label: deptItem?.label ?? id,
-                                icon: deptItem?.icon,
-                            };
-                        }),
-                    );
-                    // Query ALL placements for this frame (across all departments)
-                    const placementsResult = await getPagePlacements(activeFrame.id);
-                    const seenIds = new Set<string>();
-                    const placementItems = (placementsResult.data ?? [])
-                        .map((entry) => {
-                            if (entry.parent_id === null) {
-                                // Root-level placement - use dept-root- format
-                                const dept = departments.find((d) => d.id === entry.department_id);
-                                return {
-                                    id: `dept-root-${entry.department_id}`,
-                                    label: `${dept?.name ?? entry.department_id} (Root)`,
-                                };
-                            }
-                            // Folder placement
-                            const folder = allFoldersById.get(entry.parent_id);
-                            return {
-                                id: entry.parent_id,
-                                label: folder?.name ?? entry.parent_id,
-                                emoji: folder?.emoji ?? undefined,
-                            };
-                        })
-                        .filter((item) => {
-                            if (seenIds.has(item.id)) return false;
-                            seenIds.add(item.id);
-                            return true;
-                        });
-                    replaceSelectedItems(pagePlacements, placementItems);
-                    setEditPageOpen(true);
-                };
-
-                onHeaderContentChange(
-                    <EmbeddedHeaderContent
-                        activeFrame={activeFrame}
-                        onEdit={handleEditClick}
-                        onFullscreen={onFullscreen}
-                        isFavorite={favoriteEntryIds.includes(activeEntry.id)}
-                        onToggleFavorite={() => toggleFavorite(activeEntry.id)}
-                        pathSegments={iframePathSegments}
-                    />
-                );
-            } else {
-                // Folder view header - action buttons only
-                onHeaderContentChange(
-                    <EmbeddedFolderHeader
-                        showEditButton={!!activeEntry && !activeEntry.frame_id}
-                        onEditFolder={() => {
-                            if (!activeEntry) return;
-                            setFolderForm({
-                                ...emptyForm,
-                                name: activeEntry.name,
-                                slug: activeEntry.slug,
-                                emoji: activeEntry.emoji ?? "",
-                            });
-                            setEditFolderOpen(true);
-                        }}
-                        onNewFolder={() => {
-                            setFolderForm(emptyForm);
-                            setCreateFolderParentId(activeEntry?.id ?? null);
-                            setCreateFolderOpen(true);
-                        }}
-                        onNewPage={() => {
-                            setPageForm(emptyForm);
-                            const parentId = activeEntry?.id ?? null;
-                            if (parentId) {
-                                const folder = entriesById.get(parentId);
-                                const label = folder?.name ?? "Current folder";
-                                const emoji = folder?.emoji ?? undefined;
-                                replaceSelectedItems(pagePlacements, [{ id: parentId, label, emoji }]);
-                                // Pre-fill the department based on the folder's department
-                                const deptItem = departmentItems.find((d) => d.id === folder?.department_id);
-                                if (deptItem) {
-                                    replaceSelectedItems(pageDepartments, [{ id: deptItem.id, label: deptItem.label, icon: deptItem.icon }]);
-                                } else {
-                                    replaceSelectedItems(pageDepartments, []);
-                                }
-                            } else {
-                                replaceSelectedItems(pagePlacements, []);
-                                replaceSelectedItems(pageDepartments, []);
-                            }
-                            setError(null);
-                            setCreatePageOpen(true);
-                        }}
-                        isFavorite={activeEntry ? favoriteEntryIds.includes(activeEntry.id) : false}
-                        onToggleFavorite={activeEntry ? () => toggleFavorite(activeEntry.id) : undefined}
-                    />
-                );
-            }
-        }
+                    setEditFolderOpen(true);
+                }}
+                onNewFolder={() => {
+                    setFolderForm(emptyForm);
+                    setCreateFolderParentId(activeEntry?.id ?? null);
+                    setCreateFolderOpen(true);
+                }}
+                onNewPage={() => {
+                    setPageForm(emptyForm);
+                    const parentId = activeEntry?.id ?? null;
+                    if (parentId) {
+                        const folder = entriesById.get(parentId);
+                        const label = folder?.name ?? "Current folder";
+                        const emoji = folder?.emoji ?? undefined;
+                        replaceSelectedItems(pagePlacements, [{ id: parentId, label, emoji }]);
+                        // Pre-fill the department based on the folder's department
+                        const deptItem = departmentItems.find((d) => d.id === folder?.department_id);
+                        if (deptItem) {
+                            replaceSelectedItems(pageDepartments, [{ id: deptItem.id, label: deptItem.label, icon: deptItem.icon }]);
+                        } else {
+                            replaceSelectedItems(pageDepartments, []);
+                        }
+                    } else {
+                        replaceSelectedItems(pagePlacements, []);
+                        replaceSelectedItems(pageDepartments, []);
+                    }
+                    setError(null);
+                    setCreatePageOpen(true);
+                }}
+                isFavorite={activeEntry ? favoriteEntryIds.includes(activeEntry.id) : false}
+                onToggleFavorite={activeEntry ? () => toggleFavorite(activeEntry.id) : undefined}
+            />
+        );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, departmentItems, entries, selectedDepartmentId, entriesById, allFoldersById, favoriteEntryIds, iframePathSegments, onFullscreen]);
+    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departmentItems, entriesById, favoriteEntryIds]);
 };

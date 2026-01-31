@@ -11,13 +11,14 @@ type FolderCardProps = {
     entry: DirectoryEntry;
     path: string[];
     childCount: number;
+    departmentSlug: string;
     isFavorite?: boolean;
     onToggleFavorite?: () => void;
 };
 
-const FolderCardBase = ({ entry, path, childCount, isFavorite = false, onToggleFavorite }: FolderCardProps) => {
+const FolderCardBase = ({ entry, path, childCount, departmentSlug, isFavorite = false, onToggleFavorite }: FolderCardProps) => {
     const appendUrlParams = useAppendUrlParams();
-    const basePath = `/${entry.department_id}/${path.join("/")}`;
+    const basePath = `/${departmentSlug}/${path.join("/")}`;
     const href = appendUrlParams(basePath);
 
     return (

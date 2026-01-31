@@ -22,6 +22,7 @@ import { Dialog, DialogTrigger, Modal, ModalOverlay } from "@/components/applica
 import { cx } from "@/utils/cx";
 import { getIconByName } from "@/utils/icon-map";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
+import { getDepartmentSlug, buildDepartmentUrl } from "@/utils/department-slugs";
 import { updateNavigationPages, updateDivisionOrder } from "./actions";
 
 const SIDEBAR_DEFAULT_EXPANDED_KEY = "sidebar-default-expanded";
@@ -176,7 +177,7 @@ export const SettingsPage = () => {
                     if (department) {
                         items.push({
                             label: page.title,
-                            href: `/${department.id}`,
+                            href: `/${page.slug}`,
                             icon: getIconByName(page.icon, FolderClosed),
                         });
                     }
@@ -190,7 +191,8 @@ export const SettingsPage = () => {
     // Handle command menu selection
     const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
         if (type === "department") {
-            router.push(appendUrlParams(`/${id}`));
+            const slug = getDepartmentSlug(id, departments, navigationPages);
+            router.push(appendUrlParams(`/${slug}`));
         } else if (type === "folder") {
             const folder = entries.find((e) => e.id === id);
             if (folder) {
@@ -205,7 +207,8 @@ export const SettingsPage = () => {
                         break;
                     }
                 }
-                router.push(appendUrlParams(`/${folder.department_id}/${pathParts.join("/")}`));
+                const url = buildDepartmentUrl(folder.department_id, pathParts, departments, navigationPages);
+                router.push(appendUrlParams(url));
             }
         } else if (type === "page") {
             const frame = frames.find((f) => f.id === id);
@@ -222,10 +225,11 @@ export const SettingsPage = () => {
                         break;
                     }
                 }
-                router.push(appendUrlParams(`/${entry.department_id}/${pathParts.join("/")}`));
+                const url = buildDepartmentUrl(entry.department_id, pathParts, departments, navigationPages);
+                router.push(appendUrlParams(url));
             }
         }
-    }, [appendUrlParams, entries, frames, router]);
+    }, [appendUrlParams, departments, navigationPages, entries, frames, router]);
 
     // Initialize edited pages when navigation pages load
     useEffect(() => {

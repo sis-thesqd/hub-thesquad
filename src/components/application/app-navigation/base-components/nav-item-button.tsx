@@ -42,6 +42,8 @@ interface NavItemButtonProps {
     tooltipPlacement?: "top" | "right" | "bottom" | "left";
     /** Department ID to fetch children for. If provided, shows dropdown with children on hover. */
     departmentId?: string;
+    /** Department URL slug (used in URLs instead of departmentId). Required if departmentId is provided. */
+    departmentSlug?: string;
 }
 
 export const NavItemButton = ({
@@ -54,6 +56,7 @@ export const NavItemButton = ({
     tooltipPlacement = "right",
     onClick,
     departmentId,
+    departmentSlug,
 }: NavItemButtonProps) => {
     const appendUrlParams = useAppendUrlParams();
     const [isHovered, setIsHovered] = useState(false);
@@ -206,7 +209,8 @@ export const NavItemButton = ({
                     {topLevelPages.length > 0 && (
                         <>
                             {topLevelPages.map((page) => {
-                                const pageHref = appendUrlParams(`/${page.department_id}/${page.slug}`);
+                                const urlSlug = departmentSlug || page.department_id;
+                                const pageHref = appendUrlParams(`/${urlSlug}/${page.slug}`);
                                 return (
                                     <Link
                                         key={page.id}
@@ -235,7 +239,8 @@ export const NavItemButton = ({
                     
                     {/* Folders with their child pages nested underneath */}
                     {topLevelFolders.map((folder) => {
-                        const folderHref = appendUrlParams(`/${folder.department_id}/${folder.slug}`);
+                        const urlSlug = departmentSlug || folder.department_id;
+                        const folderHref = appendUrlParams(`/${urlSlug}/${folder.slug}`);
                         const folderPages = pagesByParent.get(folder.id) || [];
 
                         return (
@@ -263,7 +268,8 @@ export const NavItemButton = ({
                                 {folderPages.length > 0 && (
                                     <div className="ml-6 pl-1">
                                         {folderPages.map((page) => {
-                                            const pageHref = appendUrlParams(`/${page.department_id}/${page.slug}`);
+                                            const pageUrlSlug = departmentSlug || page.department_id;
+                                            const pageHref = appendUrlParams(`/${pageUrlSlug}/${folder.slug}/${page.slug}`);
                                             return (
                                                 <Link
                                                     key={page.id}

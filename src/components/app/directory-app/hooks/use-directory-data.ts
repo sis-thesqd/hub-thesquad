@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAppendUrlParams } from "@/hooks/use-url-params";
 import type { DirectoryEntry, Frame, RipplingDepartment } from "@/utils/supabase/types";
 import { buildPathSegments, findEntryByPath } from "../utils";
 
@@ -21,8 +19,6 @@ export const useDirectoryData = ({
     entriesOverride,
     framesOverride,
 }: UseDirectoryDataProps) => {
-    const router = useRouter();
-    const appendUrlParams = useAppendUrlParams();
     const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
     const [pathSegments, setPathSegments] = useState(initialPath);
     const [error, setError] = useState<string | null>(null);
@@ -55,15 +51,6 @@ export const useDirectoryData = ({
         setPathSegments(initialPath);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialPathKey]);
-
-    // Handle initial redirect if no department selected
-    useEffect(() => {
-        if (departmentsOverride?.length && !initialDepartmentId) {
-            const first = departmentsOverride[0].id;
-            setSelectedDepartmentId(first);
-            router.replace(appendUrlParams(`/${first}`));
-        }
-    }, [departmentsOverride, initialDepartmentId, router, appendUrlParams]);
 
     // No-op refreshData - data comes from React Query via overrides
     // Parent components should use invalidateEntriesAndFrames() instead
@@ -181,11 +168,6 @@ export const useDirectoryData = ({
         return activeChildren.filter((entry) => entry.frame_id);
     }, [activeChildren]);
 
-    const handleDepartmentSelect = (departmentId: string) => {
-        setSelectedDepartmentId(departmentId);
-        router.push(appendUrlParams(`/${departmentId}`));
-    };
-
     return {
         departments,
         entries,
@@ -209,7 +191,6 @@ export const useDirectoryData = ({
         activeChildren,
         visibleFolders,
         visiblePages,
-        handleDepartmentSelect,
         refreshData,
         // External pages support
         externalPageEntries,

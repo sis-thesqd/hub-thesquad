@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/providers/auth-provider";
+import { getDepartmentSlug } from "@/utils/department-slugs";
 
 import type { DirectoryAppProps } from "./types";
 import { emptyForm } from "./constants";
@@ -129,6 +130,11 @@ export const DirectoryApp = ({
     // Use passed favorites props, with fallback for standalone usage
     const toggleFavorite = onToggleFavorite ?? (() => {});
 
+    // Compute department slug for URL building
+    const departmentSlug = selectedDepartmentId
+        ? getDepartmentSlug(selectedDepartmentId, departments, navigationPages)
+        : "";
+
     const folderOptions = useFolderOptions({
         allFolders,
         allFolderPathById,
@@ -227,6 +233,7 @@ export const DirectoryApp = ({
         activeFrame,
         activeParentId,
         departments,
+        navigationPages,
         entriesById,
         allFoldersById,
         pathById,
@@ -302,6 +309,7 @@ export const DirectoryApp = ({
                                                     entry={child}
                                                     path={path}
                                                     childCount={childCount}
+                                                    departmentSlug={departmentSlug}
                                                     isFavorite={favoriteEntryIds.includes(child.id)}
                                                     onToggleFavorite={() => toggleFavorite(child.id)}
                                                 />
@@ -310,7 +318,7 @@ export const DirectoryApp = ({
                                         {/* External Pages Folder - only shown at top level when there are external pages */}
                                         {!activeEntry && hasExternalPages && !isExternalPagesView && selectedDepartmentId && (
                                             <ExternalPagesLink
-                                                selectedDepartmentId={selectedDepartmentId}
+                                                departmentSlug={departmentSlug}
                                                 externalPageCount={externalPageEntries.length}
                                             />
                                         )}
@@ -328,12 +336,17 @@ export const DirectoryApp = ({
                                                 ? externalPathById.get(child.id) ?? [child.slug]
                                                 : pathById.get(child.id) ?? [child.slug];
                                             const frame = child.frame_id ? frameById.get(child.frame_id) : null;
+                                            // For external pages, use the entry's department slug
+                                            const cardDeptSlug = isExternalPagesView
+                                                ? getDepartmentSlug(child.department_id, departments, navigationPages)
+                                                : departmentSlug;
                                             return (
                                                 <PageCard
                                                     key={child.id}
                                                     entry={child}
                                                     path={path}
                                                     frame={frame ?? null}
+                                                    departmentSlug={cardDeptSlug}
                                                     isFavorite={favoriteEntryIds.includes(child.id)}
                                                     onToggleFavorite={() => toggleFavorite(child.id)}
                                                 />

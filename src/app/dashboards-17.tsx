@@ -15,6 +15,7 @@ import type { Frame } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 import { slugify } from "@/utils/slugify";
 import { buildPathToRoot, createEntriesMap } from "@/utils/directory/build-path";
+import { getDepartmentIdFromSlug, getDepartmentSlug, buildDepartmentUrl } from "@/utils/department-slugs";
 import { createFolder, createPage } from "@/app/api/directory/actions";
 import { useAuth } from "@/providers/auth-provider";
 import { useAppendUrlParams, useUrlParams } from "@/hooks/use-url-params";
@@ -28,12 +29,12 @@ import { useDirectoryQueries, useInvalidateDirectory } from "@/hooks/use-directo
 import { AnimatedGroup } from "@/components/base/animated-group/animated-group";
 
 interface Dashboard17Props {
-    initialDepartmentId?: string;
+    initialDepartmentSlug?: string;
     initialPath?: string[];
     showFavorites?: boolean;
 }
 
-export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = false }: Dashboard17Props) => {
+export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites = false }: Dashboard17Props) => {
     const router = useRouter();
     const urlParams = useUrlParams();
     const appendUrlParams = useAppendUrlParams();
@@ -43,7 +44,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     const { departments, navigationPages, entries, frames, divisionOrder, refetchAll, isLoading: isDirectoryLoading } = useDirectoryQueries();
     const { invalidateEntriesAndFrames } = useInvalidateDirectory();
 
-    const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId ?? "");
+    const [selectedDepartmentId, setSelectedDepartmentId] = useState("");
     const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
     const [activeEntryInfo, setActiveEntryInfo] = useState<ActiveEntryInfo>(null);
     const [commandMenuOpen, setCommandMenuOpen] = useState(false);
@@ -89,8 +90,11 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
         }
     }, [homeCreateFolderOpen, pendingFolderForPlacement, homePagePlacements]);
 
-    const isHomePage = !initialDepartmentId && !showFavorites;
+    const isHomePage = !initialDepartmentSlug && !showFavorites;
     const isFavoritesPage = showFavorites;
+
+    // Track whether slug resolution has been attempted (to avoid rendering DirectoryApp too early)
+    const isSlugResolved = !initialDepartmentSlug || (departments.length > 0 && navigationPages.length > 0);
 
     // Read modal action from URL params
     const modalParam = urlParams.get("modal");
@@ -99,9 +103,19 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     const firstName = worker?.preferred_given_name || worker?.given_name;
     const hasLoadedName = Boolean(firstName);
 
+    // Resolve department slug to ID once departments and navigationPages are loaded
     useEffect(() => {
-        setSelectedDepartmentId(initialDepartmentId ?? "");
-    }, [initialDepartmentId]);
+        if (!initialDepartmentSlug) {
+            setSelectedDepartmentId("");
+            return;
+        }
+        if (departments.length === 0 || navigationPages.length === 0) {
+            // Data not loaded yet, wait
+            return;
+        }
+        const departmentId = getDepartmentIdFromSlug(initialDepartmentSlug, departments, navigationPages);
+        setSelectedDepartmentId(departmentId ?? "");
+    }, [initialDepartmentSlug, departments, navigationPages]);
 
     // Auto-open fullscreen from URL param
     useEffect(() => {
@@ -143,7 +157,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                     if (department) {
                         items.push({
                             label: page.title,
-                            href: `/${department.id}`,
+                            href: `/${page.slug}`,
                             icon: getIconByName(page.icon, FolderClosed),
                         });
                     }
@@ -392,27 +406,30 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
         const entriesById = createEntriesMap(entries);
 
         if (type === "department") {
-            router.push(appendUrlParams(`/${id}`));
+            const slug = getDepartmentSlug(id, departments, navigationPages);
+            router.push(appendUrlParams(`/${slug}`));
         } else if (type === "folder") {
             const folder = entriesById.get(id);
             if (folder) {
                 const pathParts = buildPathToRoot(entriesById, folder);
-                router.push(appendUrlParams(`/${folder.department_id}/${pathParts.join("/")}`));
+                const url = buildDepartmentUrl(folder.department_id, pathParts, departments, navigationPages);
+                router.push(appendUrlParams(url));
             }
         } else if (type === "page") {
             const entry = entries.find((e) => e.frame_id === id);
             if (entry) {
                 const pathParts = buildPathToRoot(entriesById, entry);
-                router.push(appendUrlParams(`/${entry.department_id}/${pathParts.join("/")}`));
+                const url = buildDepartmentUrl(entry.department_id, pathParts, departments, navigationPages);
+                router.push(appendUrlParams(url));
             }
         }
-    }, [appendUrlParams, entries, router]);
+    }, [appendUrlParams, entries, departments, navigationPages, router]);
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
             <SidebarNavigationSlim
                 hideBorder
-                activeUrl={selectedDepartmentId ? `/${selectedDepartmentId}` : undefined}
+                activeUrl={selectedDepartmentId ? `/${getDepartmentSlug(selectedDepartmentId, departments, navigationPages)}` : undefined}
                 items={departmentItems}
                 onSearchClick={() => setCommandMenuOpen(true)}
             />
@@ -557,13 +574,18 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                                 <RecentPages
                                     entries={entries}
                                     frames={frames}
+                                    departments={departments}
+                                    navigationPages={navigationPages}
                                     userDepartmentId={worker?.department_id ?? null}
                                     favoriteEntryIds={favoriteEntryIds}
                                 />
                             </>
+                        ) : !isSlugResolved ? (
+                            // Wait for slug resolution before rendering DirectoryApp
+                            <p className="px-4 text-sm text-tertiary">Loading…</p>
                         ) : (
                             <DirectoryApp
-                                initialDepartmentId={selectedDepartmentId || initialDepartmentId}
+                                initialDepartmentId={selectedDepartmentId}
                                 initialPath={initialPath}
                                 variant="embedded"
                                 showDepartments={false}

@@ -11,13 +11,14 @@ type PageCardProps = {
     entry: DirectoryEntry;
     path: string[];
     frame: Frame | null;
+    departmentSlug: string;
     isFavorite?: boolean;
     onToggleFavorite?: () => void;
 };
 
-const PageCardBase = ({ entry, path, frame, isFavorite = false, onToggleFavorite }: PageCardProps) => {
+const PageCardBase = ({ entry, path, frame, departmentSlug, isFavorite = false, onToggleFavorite }: PageCardProps) => {
     const appendUrlParams = useAppendUrlParams();
-    const basePath = `/${entry.department_id}/${path.join("/")}`;
+    const basePath = `/${departmentSlug}/${path.join("/")}`;
     const href = appendUrlParams(basePath);
 
     return (

@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/application/empty-state/empty-state";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import { buildPathToRoot, createEntriesMap } from "@/utils/directory/build-path";
 import { slugify } from "@/utils/slugify";
+import { getDepartmentSlug } from "@/utils/department-slugs";
 import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment, ShFavorite } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 import { cx } from "@/utils/cx";
@@ -50,11 +51,13 @@ export const FavoritesView = ({
             entry: DirectoryEntry;
             path: string[];
             childCount: number;
+            departmentSlug: string;
         }> = [];
         const pageFavorites: Array<{
             entry: DirectoryEntry;
             path: string[];
             frame: Frame | null;
+            departmentSlug: string;
         }> = [];
 
         for (const fav of favorites) {
@@ -69,12 +72,13 @@ export const FavoritesView = ({
                 const entry = entriesById.get(fav.entry_id);
                 if (entry) {
                     const path = buildPathToRoot(entriesById, entry);
+                    const departmentSlug = getDepartmentSlug(entry.department_id, departments, navigationPages);
                     if (entry.frame_id) {
                         const frame = framesById.get(entry.frame_id) ?? null;
-                        pageFavorites.push({ entry, path, frame });
+                        pageFavorites.push({ entry, path, frame, departmentSlug });
                     } else {
                         const childCount = entries.filter((e) => e.parent_id === entry.id).length;
-                        folderFavorites.push({ entry, path, childCount });
+                        folderFavorites.push({ entry, path, childCount, departmentSlug });
                     }
                 }
             }
@@ -133,7 +137,8 @@ export const FavoritesView = ({
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {favoriteDepartments.map(({ id, department, navPage }) => {
                             const Icon = navPage ? getIconByName(navPage.icon) : Star01;
-                            const href = appendUrlParams(`/${id}`);
+                            const deptSlug = getDepartmentSlug(id, departments, navigationPages);
+                            const href = appendUrlParams(`/${deptSlug}`);
                             return (
                                 <Link
                                     key={id}
@@ -174,12 +179,13 @@ export const FavoritesView = ({
                         Folders
                     </h2>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {favoriteFolders.map(({ entry, path, childCount }) => (
+                        {favoriteFolders.map(({ entry, path, childCount, departmentSlug }) => (
                             <FolderCard
                                 key={entry.id}
                                 entry={entry}
                                 path={path}
                                 childCount={childCount}
+                                departmentSlug={departmentSlug}
                                 isFavorite
                                 onToggleFavorite={() => onToggleFavorite(entry.id)}
                             />
@@ -195,12 +201,13 @@ export const FavoritesView = ({
                         Pages
                     </h2>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {favoritePages.map(({ entry, path, frame }) => (
+                        {favoritePages.map(({ entry, path, frame, departmentSlug }) => (
                             <PageCard
                                 key={entry.id}
                                 entry={entry}
                                 path={path}
                                 frame={frame}
+                                departmentSlug={departmentSlug}
                                 isFavorite
                                 onToggleFavorite={() => onToggleFavorite(entry.id)}
                             />

@@ -48,7 +48,7 @@ export const HomeGrid = ({ departments, navigationPages, entries, userDepartment
         return {
             ...page,
             departmentId: department?.id,
-            href: department ? `/${department.id}` : "#",
+            href: department ? `/${page.slug}` : "#",
             folderCount: counts?.folders ?? 0,
             pageCount: counts?.pages ?? 0,
         };

@@ -5,16 +5,19 @@ import Link from "next/link";
 import { FileCode01, Star01 } from "@untitledui/icons";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { buildPathToRoot, createEntriesMap } from "@/utils/directory/build-path";
-import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
+import { buildDepartmentUrl } from "@/utils/department-slugs";
+import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 
 interface RecentPagesProps {
     entries: DirectoryEntry[];
     frames: Frame[];
+    departments: RipplingDepartment[];
+    navigationPages: NavigationPage[];
     userDepartmentId: string | null;
     favoriteEntryIds?: string[];
 }
 
-export const RecentPages = ({ entries, frames, userDepartmentId, favoriteEntryIds = [] }: RecentPagesProps) => {
+export const RecentPages = ({ entries, frames, departments, navigationPages, userDepartmentId, favoriteEntryIds = [] }: RecentPagesProps) => {
     const appendUrlParams = useAppendUrlParams();
 
     const recentPages = useMemo(() => {
@@ -47,7 +50,7 @@ export const RecentPages = ({ entries, frames, userDepartmentId, favoriteEntryId
 
             // Build full path including parent folders
             const pathParts = buildPathToRoot(entriesById, entry);
-            const href = `/${entry.department_id}/${pathParts.join("/")}`;
+            const href = buildDepartmentUrl(entry.department_id, pathParts, departments, navigationPages);
 
             return {
                 id: frame.id,
@@ -67,7 +70,7 @@ export const RecentPages = ({ entries, frames, userDepartmentId, favoriteEntryId
             href: string;
             createdAt: string | undefined;
         }>;
-    }, [frames, entries, userDepartmentId]);
+    }, [frames, entries, departments, navigationPages, userDepartmentId]);
 
     if (recentPages.length === 0) {
         return null;

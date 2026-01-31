@@ -6,19 +6,19 @@ import { useAppendUrlParams } from "@/hooks/use-url-params";
 import { EXTERNAL_PAGES_SLUG } from "../hooks";
 
 type ExternalPagesLinkProps = {
-    selectedDepartmentId: string;
+    departmentSlug: string;
     externalPageCount: number;
 };
 
 export const ExternalPagesLink = ({
-    selectedDepartmentId,
+    departmentSlug,
     externalPageCount,
 }: ExternalPagesLinkProps) => {
     const appendUrlParams = useAppendUrlParams();
 
     return (
         <Link
-            href={appendUrlParams(`/${selectedDepartmentId}/${EXTERNAL_PAGES_SLUG}`)}
+            href={appendUrlParams(`/${departmentSlug}/${EXTERNAL_PAGES_SLUG}`)}
             className="group relative flex items-center gap-4 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
         >
             <div className="flex size-12 items-center justify-center rounded-lg bg-secondary">
