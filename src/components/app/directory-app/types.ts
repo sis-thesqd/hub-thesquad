@@ -6,6 +6,8 @@ export type ActiveEntryInfo = {
     emoji?: string;
     icon?: string;
     isPage: boolean;
+    frameId?: string;
+    pathSegments?: string[];
 } | null;
 
 export type DirectoryAppProps = {
@@ -23,6 +25,7 @@ export type DirectoryAppProps = {
     onModalActionHandled?: () => void;
     favoriteEntryIds?: string[];
     onToggleFavorite?: (entryId: string) => void;
+    onFullscreen?: () => void;
 };
 
 export type FormState = {

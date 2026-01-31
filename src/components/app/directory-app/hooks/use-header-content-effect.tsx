@@ -38,6 +38,7 @@ type UseHeaderContentEffectParams = {
     setError: (error: string | null) => void;
     emptyForm: FormState;
     iframePathSegments?: string[];
+    onFullscreen?: () => void;
 };
 
 export const useHeaderContentEffect = ({
@@ -66,6 +67,7 @@ export const useHeaderContentEffect = ({
     setError,
     emptyForm,
     iframePathSegments = [],
+    onFullscreen,
 }: UseHeaderContentEffectParams) => {
     useEffect(() => {
         if (variant === "embedded" && onHeaderContentChange) {
@@ -124,6 +126,7 @@ export const useHeaderContentEffect = ({
                     <EmbeddedHeaderContent
                         activeFrame={activeFrame}
                         onEdit={handleEditClick}
+                        onFullscreen={onFullscreen}
                         isFavorite={favoriteEntryIds.includes(activeEntry.id)}
                         onToggleFavorite={() => toggleFavorite(activeEntry.id)}
                         pathSegments={iframePathSegments}
@@ -178,5 +181,5 @@ export const useHeaderContentEffect = ({
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, departmentItems, entries, selectedDepartmentId, entriesById, allFoldersById, favoriteEntryIds, iframePathSegments]);
+    }, [variant, onHeaderContentChange, activeFrame, activeEntry, departments, departmentItems, entries, selectedDepartmentId, entriesById, allFoldersById, favoriteEntryIds, iframePathSegments, onFullscreen]);
 };

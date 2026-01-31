@@ -12,6 +12,7 @@ type UseActiveEntryEffectParams = {
     departments: RipplingDepartment[];
     navigationPages: NavigationPage[];
     isExternalPagesView: boolean;
+    iframePathSegments?: string[];
 };
 
 export const useActiveEntryEffect = ({
@@ -22,6 +23,7 @@ export const useActiveEntryEffect = ({
     departments,
     navigationPages,
     isExternalPagesView,
+    iframePathSegments = [],
 }: UseActiveEntryEffectParams) => {
     useEffect(() => {
         if (onActiveEntryChange) {
@@ -30,6 +32,8 @@ export const useActiveEntryEffect = ({
                     name: activeFrame.name,
                     emoji: activeEntry?.emoji ?? undefined,
                     isPage: true,
+                    frameId: activeFrame.id,
+                    pathSegments: iframePathSegments,
                 });
             } else if (isExternalPagesView) {
                 // External pages virtual folder
@@ -67,5 +71,5 @@ export const useActiveEntryEffect = ({
                 onActiveEntryChange(null);
             }
         }
-    }, [onActiveEntryChange, activeEntry, activeFrame, selectedDepartmentId, departments, navigationPages, isExternalPagesView]);
+    }, [onActiveEntryChange, activeEntry, activeFrame, selectedDepartmentId, departments, navigationPages, isExternalPagesView, iframePathSegments]);
 };

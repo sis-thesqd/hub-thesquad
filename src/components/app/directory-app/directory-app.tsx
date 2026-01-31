@@ -49,6 +49,7 @@ export const DirectoryApp = ({
     onModalActionHandled,
     favoriteEntryIds = [],
     onToggleFavorite,
+    onFullscreen,
 }: DirectoryAppProps) => {
     const { worker } = useAuth();
 
@@ -193,6 +194,7 @@ export const DirectoryApp = ({
         setError,
         emptyForm,
         iframePathSegments,
+        onFullscreen,
     });
 
     useActiveEntryEffect({
@@ -203,6 +205,7 @@ export const DirectoryApp = ({
         departments,
         navigationPages,
         isExternalPagesView,
+        iframePathSegments,
     });
 
     const {

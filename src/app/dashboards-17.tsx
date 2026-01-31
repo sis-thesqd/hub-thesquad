@@ -8,7 +8,7 @@ import { useListData } from "react-stately";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 import { DirectoryApp } from "@/components/app/directory-app";
 import { DirectoryCommandMenu } from "@/components/app/directory-app/components/directory-command-menu";
-import { CreateFolderModal, CreatePageModal } from "@/components/app/directory-app/components/modals";
+import { CreateFolderModal, CreatePageModal, FullscreenIframeModal } from "@/components/app/directory-app/components/modals";
 import { emptyForm, getRandomEmoji } from "@/components/app/directory-app/constants";
 import type { FormState, ActiveEntryInfo } from "@/components/app/directory-app/types";
 import type { Frame } from "@/utils/supabase/types";
@@ -47,6 +47,9 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
     const [activeEntryInfo, setActiveEntryInfo] = useState<ActiveEntryInfo>(null);
     const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+    const [fullscreenOpen, setFullscreenOpen] = useState(false);
+    const [fullscreenFrame, setFullscreenFrame] = useState<Frame | null>(null);
+    const [fullscreenPathSegments, setFullscreenPathSegments] = useState<string[]>([]);
 
     // Favorites hook
     const {
@@ -91,6 +94,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
 
     // Read modal action from URL params
     const modalParam = urlParams.get("modal");
+    const fullscreenParam = urlParams.get("fullscreen");
     const initialModalAction = (modalParam === "folder" || modalParam === "page") ? modalParam : null;
     const firstName = worker?.preferred_given_name || worker?.given_name;
     const hasLoadedName = Boolean(firstName);
@@ -98,6 +102,18 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
     useEffect(() => {
         setSelectedDepartmentId(initialDepartmentId ?? "");
     }, [initialDepartmentId]);
+
+    // Auto-open fullscreen from URL param
+    useEffect(() => {
+        if (fullscreenParam === "true" && activeEntryInfo?.isPage && activeEntryInfo.frameId && !fullscreenOpen) {
+            const frame = frames.find((f) => f.id === activeEntryInfo.frameId);
+            if (frame) {
+                setFullscreenFrame(frame);
+                setFullscreenPathSegments(activeEntryInfo.pathSegments ?? []);
+                setFullscreenOpen(true);
+            }
+        }
+    }, [fullscreenParam, activeEntryInfo, frames, fullscreenOpen]);
 
     const departmentItems = useMemo(() => {
         // Group pages by division (using page.division from config)
@@ -343,6 +359,35 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
         }
     }, [homePageForm, homePageDepartments.items, homePagePlacements.items, entries, invalidateEntriesAndFrames]);
 
+    const handleFullscreen = useCallback(() => {
+        if (activeEntryInfo?.isPage && activeEntryInfo.frameId) {
+            const frame = frames.find((f) => f.id === activeEntryInfo.frameId);
+            if (frame) {
+                setFullscreenFrame(frame);
+                setFullscreenPathSegments(activeEntryInfo.pathSegments ?? []);
+                setFullscreenOpen(true);
+                // Add fullscreen param to URL
+                const newParams = new URLSearchParams(urlParams.toString());
+                newParams.set("fullscreen", "true");
+                const newUrl = `${window.location.pathname}?${newParams.toString()}`;
+                router.replace(newUrl);
+            }
+        }
+    }, [activeEntryInfo, frames, urlParams, router]);
+
+    const handleFullscreenClose = useCallback((open: boolean) => {
+        setFullscreenOpen(open);
+        if (!open) {
+            // Remove fullscreen param from URL
+            const newParams = new URLSearchParams(urlParams.toString());
+            newParams.delete("fullscreen");
+            const newUrl = newParams.toString()
+                ? `${window.location.pathname}?${newParams.toString()}`
+                : window.location.pathname;
+            router.replace(newUrl);
+        }
+    }, [urlParams, router]);
+
     const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
         const entriesById = createEntriesMap(entries);
 
@@ -430,6 +475,13 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                 pagePlacements={homePagePlacements}
                 onFolderSelected={handleHomeFolderSelected}
                 onSubmit={handleHomeCreatePage}
+            />
+
+            <FullscreenIframeModal
+                isOpen={fullscreenOpen}
+                onOpenChange={handleFullscreenClose}
+                frame={fullscreenFrame}
+                pathSegments={fullscreenPathSegments}
             />
 
             <main className="min-w-0 flex-1 overflow-hidden lg:pt-2 lg:pl-1">
@@ -533,6 +585,7 @@ export const Dashboard17 = ({ initialDepartmentId, initialPath, showFavorites = 
                                 }}
                                 favoriteEntryIds={favoriteEntryIds}
                                 onToggleFavorite={toggleFavorite}
+                                onFullscreen={handleFullscreen}
                             />
                         )}
                     </div>

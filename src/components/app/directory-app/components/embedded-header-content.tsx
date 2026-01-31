@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ArrowUpRight, Copy01, Edit05, Star01 } from "@untitledui/icons";
+import { ArrowUpRight, Copy01, Edit05, Expand06, Star01 } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { cx } from "@/utils/cx";
@@ -12,6 +12,7 @@ import { useAuth } from "@/providers/auth-provider";
 type EmbeddedHeaderContentProps = {
     activeFrame: Frame;
     onEdit: () => void;
+    onFullscreen?: () => void;
     isFavorite?: boolean;
     onToggleFavorite?: () => void;
     pathSegments?: string[];
@@ -20,6 +21,7 @@ type EmbeddedHeaderContentProps = {
 export const EmbeddedHeaderContent = ({
     activeFrame,
     onEdit,
+    onFullscreen,
     isFavorite = false,
     onToggleFavorite,
     pathSegments = [],
@@ -129,6 +131,14 @@ export const EmbeddedHeaderContent = ({
                         >
                             Edit
                         </Dropdown.Item>
+                        {onFullscreen && (
+                            <Dropdown.Item
+                                icon={Expand06}
+                                onAction={onFullscreen}
+                            >
+                                Open fullscreen
+                            </Dropdown.Item>
+                        )}
                         <Dropdown.Item
                             icon={ArrowUpRight}
                             onAction={handleOpenInNewTab}
