@@ -37,6 +37,11 @@ export const NavAccountMenu = ({
         router.push("/login");
     }, [signOut, router]);
 
+    const handleFavorites = useCallback(() => {
+        onClose?.();
+        router.push("/favorites");
+    }, [onClose, router]);
+
     const handleSettings = useCallback(() => {
         onClose?.();
         router.push("/settings");
@@ -81,6 +86,7 @@ export const NavAccountMenu = ({
                         <p className="text-sm font-semibold text-primary">{fullName}</p>
                         {userEmail && <p className="text-xs text-tertiary">{userEmail}</p>}
                     </div>
+                    <NavAccountCardMenuItem label="Favorites" icon={Star01} onClick={handleFavorites} />
                     <NavAccountCardMenuItem label="Settings" icon={Settings01} onClick={handleSettings} />
                     <NavAccountCardMenuItem label="Sign out" icon={LogOut01} shortcut="⌥⇧Q" onClick={handleSignOut} />
                 </div>

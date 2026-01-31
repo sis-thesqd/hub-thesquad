@@ -1,10 +1,9 @@
 "use client";
 
 import type { FC } from "react";
-import { useState, useCallback, useEffect } from "react";
-import { LogOut01, SearchLg, Star01 } from "@untitledui/icons";
+import { useState, useEffect } from "react";
+import { LogOut01, SearchLg } from "@untitledui/icons";
 import { AnimatePresence, motion } from "motion/react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button as AriaButton, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
 import { Link as AriaLink } from "react-aria-components";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -14,8 +13,6 @@ import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { useAuth } from "@/providers/auth-provider";
 import { cx } from "@/utils/cx";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
-import { favoritesKeys, fetchFavorites } from "@/hooks/use-favorites";
-import { usePrefetchDirectory } from "@/hooks/use-directory-queries";
 import { MobileNavigationHeader } from "../base-components/mobile-header";
 import { NavAccountMenu } from "../base-components/nav-account-card";
 import { NavItemBase } from "../base-components/nav-item";
@@ -49,10 +46,8 @@ interface SidebarNavigationSlimProps {
 export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hideBorder, hideRightBorder, onSearchClick }: SidebarNavigationSlimProps) => {
     const { worker, userEmail } = useAuth();
     const appendUrlParams = useAppendUrlParams();
-    const queryClient = useQueryClient();
-    const { prefetchAll: prefetchDirectory } = usePrefetchDirectory();
     const activeItem = [...items, ...footerItems].find((item) => item.href === activeUrl || item.items?.some((subItem) => subItem.href === activeUrl));
-    const fallbackItem = items[0] || footerItems[0] || { label: "", href: "", icon: Star01 };
+    const fallbackItem = items[0] || footerItems[0];
     const [currentItem, setCurrentItem] = useState(activeItem || fallbackItem);
     const [isHovering, setIsHovering] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState<boolean | null>(null);
@@ -74,25 +69,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
     const displayName = worker?.display_name || worker?.given_name || "User";
     const initials = getInitials(worker?.given_name, worker?.family_name);
 
-    const isSecondarySidebarVisible = isHovering && Boolean(currentItem.items?.length);
-
-    // Prefetch favorites data when hovering over favorites link
-    const handleFavoritesHover = useCallback(() => {
-        if (!worker?.id) return;
-
-        const queryKey = favoritesKeys.user(worker.id);
-
-        // Use ensureQueryData which waits for data to be available
-        // This ensures data is ready before navigation happens
-        queryClient.ensureQueryData({
-            queryKey,
-            queryFn: () => fetchFavorites(worker.id!),
-            staleTime: 1 * 60 * 1000, // 1 minute
-        });
-
-        // Prefetch directory data (needed for favorites view)
-        prefetchDirectory();
-    }, [worker?.id, queryClient, prefetchDirectory]);
+    const isSecondarySidebarVisible = isHovering && Boolean(currentItem?.items?.length);
 
     const EXPANDED_WIDTH = 250;
     const COLLAPSED_WIDTH = 64;
@@ -227,31 +204,6 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                             })}
                         </ul>
                     )}
-
-                    <div onMouseEnter={handleFavoritesHover} title={isCollapsed ? "Favorites" : undefined} className={cx(isCollapsed && "flex justify-center")}>
-                        {isCollapsed ? (
-                            <AriaLink
-                                href={appendUrlParams("/favorites")}
-                                className={cx(
-                                    "flex size-8 items-center justify-center rounded-md transition hover:bg-primary_hover",
-                                    activeUrl === "/favorites" && "bg-active"
-                                )}
-                            >
-                                <Star01 className={cx("size-5", activeUrl === "/favorites" ? "text-fg-secondary" : "text-fg-quaternary")} />
-                            </AriaLink>
-                        ) : (
-                            <AriaLink
-                                href={appendUrlParams("/favorites")}
-                                className={cx(
-                                    "flex items-center gap-2 rounded-md px-2.5 py-1.5 transition hover:bg-primary_hover",
-                                    activeUrl === "/favorites" && "bg-active"
-                                )}
-                            >
-                                <Star01 className={cx("size-5 shrink-0", activeUrl === "/favorites" ? "text-fg-secondary" : "text-fg-quaternary")} />
-                                <span className={cx("text-sm font-medium", activeUrl === "/favorites" ? "text-secondary_hover" : "text-secondary")}>Favorites</span>
-                            </AriaLink>
-                        )}
-                    </div>
 
                     {onSearchClick && (
                         isCollapsed ? (
@@ -389,12 +341,6 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                     <NavList items={items} />
 
                     <div className="mt-auto flex flex-col gap-5 px-2 py-4">
-                        <div className="flex flex-col gap-2">
-                            <NavItemBase current={activeUrl === "/favorites"} type="link" href={appendUrlParams("/favorites")} icon={Star01}>
-                                Favorites
-                            </NavItemBase>
-                        </div>
-
                         <div className="relative flex items-center gap-3 border-secondary pt-6 pr-8 pl-2">
                             <AvatarLabelGroup
                                 size="md"
