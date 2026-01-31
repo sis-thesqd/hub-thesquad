@@ -11,7 +11,7 @@ const ensureHistoryPatched = () => {
     const originalPushState = window.history.pushState;
     const originalReplaceState = window.history.replaceState;
 
-    const notify = () => window.dispatchEvent(new Event("urlchange"));
+    const notify = () => queueMicrotask(() => window.dispatchEvent(new Event("urlchange")));
 
     window.history.pushState = function pushState(...args) {
         const result = originalPushState.apply(this, args as unknown as Parameters<History["pushState"]>);
