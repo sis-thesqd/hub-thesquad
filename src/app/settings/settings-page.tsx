@@ -27,6 +27,7 @@ import { updateNavigationPages, updateDivisionOrder } from "./actions";
 
 const SIDEBAR_DEFAULT_EXPANDED_KEY = "sidebar-default-expanded";
 const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
+const FULLSCREEN_DEFAULT_KEY = "fullscreen-default";
 
 const themeItems = [
     {

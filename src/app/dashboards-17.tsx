@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type React from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { ArrowLeft, FolderClosed, Plus } from "@untitledui/icons";
 import { useListData } from "react-stately";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 import { DirectoryApp } from "@/components/app/directory-app";
-import { DirectoryCommandMenu } from "@/components/app/directory-app/components/directory-command-menu";
 import { CreateFolderModal, CreatePageModal, FullscreenIframeModal } from "@/components/app/directory-app/components/modals";
 import { emptyForm, getRandomEmoji } from "@/components/app/directory-app/constants";
 import type { FormState, ActiveEntryInfo } from "@/components/app/directory-app/types";
@@ -25,8 +25,13 @@ import { HomeGrid } from "./components/home-grid";
 import { RecentPages } from "./components/recent-pages";
 import { FavoritesView } from "./components/favorites-view";
 import { useFavorites } from "@/hooks/use-favorites";
-import { useDirectoryQueries, useInvalidateDirectory } from "@/hooks/use-directory-queries";
+import { useDirectoryCache, useDirectoryQueries, useInvalidateDirectory } from "@/hooks/use-directory-queries";
 import { AnimatedGroup } from "@/components/base/animated-group/animated-group";
+
+const DirectoryCommandMenu = dynamic(
+    () => import("@/components/app/directory-app/components/directory-command-menu").then((mod) => mod.DirectoryCommandMenu),
+    { ssr: false }
+);
 
 interface Dashboard17Props {
     initialDepartmentSlug?: string;
@@ -43,6 +48,7 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
     // React Query for data fetching - data persists across navigation
     const { departments, navigationPages, entries, frames, divisionOrder, refetchAll, isLoading: isDirectoryLoading } = useDirectoryQueries();
     const { invalidateEntriesAndFrames } = useInvalidateDirectory();
+    const { updateDirectory } = useDirectoryCache();
 
     const [selectedDepartmentId, setSelectedDepartmentId] = useState("");
     const [headerContent, setHeaderContent] = useState<React.ReactNode>(null);
@@ -297,14 +303,19 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
                     name: result.data.name,
                     emoji: result.data.emoji ?? undefined,
                 });
+                updateDirectory((current) => ({
+                    ...current,
+                    entries: [...current.entries, result.data],
+                }));
+            } else {
+                invalidateEntriesAndFrames();
             }
 
-            invalidateEntriesAndFrames();
             setHomeCreateFolderOpen(false);
         } catch (err) {
             console.error("Failed to create folder:", err);
         }
-    }, [homeFolderForm, homePagePlacements.items, worker, departments, entries, invalidateEntriesAndFrames]);
+    }, [homeFolderForm, homePagePlacements.items, worker, departments, entries, updateDirectory, invalidateEntriesAndFrames]);
 
     const handleHomeFolderSelected = useCallback((key: string | number) => {
         if (key === "__create_new__") {

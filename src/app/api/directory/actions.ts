@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { revalidateTag } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import type { DirectoryEntry, Frame } from "@/utils/supabase/types";
 
@@ -12,6 +13,8 @@ async function isLocalhost(): Promise<boolean> {
 }
 
 const DEV_EMAIL = process.env.DEV_EMAIL || "jacob@churchmediasquad.com";
+const DIRECTORY_CACHE_TAG = "directory";
+const revalidateDirectory = () => revalidateTag(DIRECTORY_CACHE_TAG);
 
 // Get authenticated user email
 async function getAuthenticatedEmail(): Promise<string | null> {
@@ -75,6 +78,7 @@ export async function createFolder(data: {
             return { success: false, error: error.message };
         }
 
+        revalidateDirectory();
         return { success: true, data: result };
     } catch (err) {
         console.error("Create folder error:", err);
@@ -112,6 +116,7 @@ export async function updateFolder(
             return { success: false, error: error.message };
         }
 
+        revalidateDirectory();
         return { success: true };
     } catch (err) {
         console.error("Update folder error:", err);
@@ -136,6 +141,7 @@ export async function deleteEntry(id: string): Promise<{ success: boolean; error
             return { success: false, error: error.message };
         }
 
+        revalidateDirectory();
         return { success: true };
     } catch (err) {
         console.error("Delete entry error:", err);
@@ -207,6 +213,7 @@ export async function createPage(data: {
             return { success: false, error: entriesError.message };
         }
 
+        revalidateDirectory();
         return { success: true, frameId: frame.id };
     } catch (err) {
         console.error("Create page error:", err);
@@ -251,6 +258,7 @@ export async function updatePage(
                 .eq("frame_id", frameId);
         }
 
+        revalidateDirectory();
         return { success: true };
     } catch (err) {
         console.error("Update page error:", err);
@@ -287,6 +295,7 @@ export async function deletePage(frameId: string): Promise<{ success: boolean; e
             return { success: false, error: frameError.message };
         }
 
+        revalidateDirectory();
         return { success: true };
     } catch (err) {
         console.error("Delete page error:", err);
@@ -352,6 +361,7 @@ export async function updatePagePlacements(
             await supabase.from("sh_directory").insert(entries);
         }
 
+        revalidateDirectory();
         return { success: true };
     } catch (err) {
         console.error("Update placements error:", err);
@@ -451,6 +461,7 @@ export async function updateDirectoryEntry(
             return { success: false, error: error.message };
         }
 
+        revalidateDirectory();
         return { success: true };
     } catch (err) {
         console.error("Update directory entry error:", err);
@@ -477,6 +488,7 @@ export async function deleteDirectoryEntries(
             return { success: false, error: error.message };
         }
 
+        revalidateDirectory();
         return { success: true };
     } catch (err) {
         console.error("Delete directory entries error:", err);
@@ -564,6 +576,7 @@ export async function createDirectoryEntries(
             return { success: false, error: error.message };
         }
 
+        revalidateDirectory();
         return { success: true, data: data ?? [] };
     } catch (err) {
         console.error("Create directory entries error:", err);
@@ -599,6 +612,7 @@ export async function updateDirectoryEntriesByFrameId(
             return { success: false, error: error.message };
         }
 
+        revalidateDirectory();
         return { success: true };
     } catch (err) {
         console.error("Update directory entries error:", err);
@@ -637,6 +651,7 @@ export async function createFrame(data: {
             return { success: false, error: error.message };
         }
 
+        revalidateDirectory();
         return { success: true, data: result };
     } catch (err) {
         console.error("Create frame error:", err);
@@ -673,6 +688,7 @@ export async function updateFrame(
             return { success: false, error: error.message };
         }
 
+        revalidateDirectory();
         return { success: true };
     } catch (err) {
         console.error("Update frame error:", err);

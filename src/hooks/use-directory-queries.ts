@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 
@@ -8,7 +9,7 @@ export const directoryKeys = {
 };
 
 // Combined response type from API
-interface DirectoryData {
+export interface DirectoryData {
     departments: RipplingDepartment[];
     entries: DirectoryEntry[];
     frames: Frame[];
@@ -65,6 +66,19 @@ export function useInvalidateDirectory() {
             queryClient.invalidateQueries({ queryKey: directoryKeys.combined() });
         },
     };
+}
+
+export function useDirectoryCache() {
+    const queryClient = useQueryClient();
+
+    const updateDirectory = useCallback((updater: (data: DirectoryData) => DirectoryData) => {
+        queryClient.setQueryData(directoryKeys.combined(), (current) => {
+            if (!current) return current;
+            return updater(current as DirectoryData);
+        });
+    }, [queryClient]);
+
+    return { updateDirectory };
 }
 
 // Prefetch functions for link hover

@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAppendUrlParams } from "@/hooks/use-url-params";
-import { useInvalidateDirectory } from "@/hooks/use-directory-queries";
+import { useDirectoryCache, useInvalidateDirectory } from "@/hooks/use-directory-queries";
 import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment } from "@/utils/supabase/types";
 import type { FormState } from "../types";
 import { emptyForm } from "../constants";
@@ -100,6 +100,7 @@ export const useDirectoryHandlers = ({
     const router = useRouter();
     const appendUrlParams = useAppendUrlParams();
     const { invalidateEntriesAndFrames } = useInvalidateDirectory();
+    const { updateDirectory } = useDirectoryCache();
 
     const handleCreateFolder = useCallback(async (parentId: string | null) => {
         if (!selectedDepartmentId) return;
@@ -124,8 +125,16 @@ export const useDirectoryHandlers = ({
         setFolderForm(emptyForm);
         setCreateFolderParentId(null);
         setCreateFolderOpen(false);
-        invalidateEntriesAndFrames();
-    }, [selectedDepartmentId, folderForm, setError, setFolderForm, setCreateFolderParentId, setCreateFolderOpen, invalidateEntriesAndFrames]);
+
+        if (result.data) {
+            updateDirectory((current) => ({
+                ...current,
+                entries: [...current.entries, result.data],
+            }));
+        } else {
+            invalidateEntriesAndFrames();
+        }
+    }, [selectedDepartmentId, folderForm, setError, setFolderForm, setCreateFolderParentId, setCreateFolderOpen, updateDirectory, invalidateEntriesAndFrames]);
 
     const handleInlineFolderCreate = useCallback(async () => {
         if (!inlineFolderLocation) return;
@@ -152,16 +161,22 @@ export const useDirectoryHandlers = ({
 
         setInlineFolderForm(emptyForm);
         setInlineFolderOpen(false);
-        invalidateEntriesAndFrames();
 
         if (result.data) {
+            updateDirectory((current) => ({
+                ...current,
+                entries: [...current.entries, result.data],
+            }));
+
             pagePlacements.append({
                 id: result.data.id,
                 label: result.data.name,
                 emoji: result.data.emoji ?? undefined,
             });
+        } else {
+            invalidateEntriesAndFrames();
         }
-    }, [inlineFolderLocation, inlineFolderForm, setError, setInlineFolderForm, setInlineFolderOpen, invalidateEntriesAndFrames, pagePlacements]);
+    }, [inlineFolderLocation, inlineFolderForm, setError, setInlineFolderForm, setInlineFolderOpen, updateDirectory, invalidateEntriesAndFrames, pagePlacements]);
 
     const handleCreatePage = useCallback(async (placementIds: string[]) => {
         if (!selectedDepartmentId) return;
@@ -265,14 +280,25 @@ export const useDirectoryHandlers = ({
             };
         });
 
-        await createDirectoryEntries(directoryEntries);
+        const entriesResult = await createDirectoryEntries(directoryEntries);
 
         setPageForm(emptyForm);
         setCreatePageOpen(false);
         clearSelectedItems(pageDepartments);
         clearSelectedItems(pagePlacements);
-
-        invalidateEntriesAndFrames();
+        if (entriesResult.success && entriesResult.data) {
+            updateDirectory((current) => ({
+                ...current,
+                frames: [...current.frames, frame],
+                entries: [...current.entries, ...entriesResult.data],
+            }));
+        } else {
+            updateDirectory((current) => ({
+                ...current,
+                frames: [...current.frames, frame],
+            }));
+            invalidateEntriesAndFrames();
+        }
 
         const firstPlacement = resolvedPlacements[0];
         const parentFolder = firstPlacement.parentId ? allFoldersById.get(firstPlacement.parentId) : null;
@@ -281,7 +307,7 @@ export const useDirectoryHandlers = ({
             : [firstPlacementSlug];
         const url = buildDepartmentUrl(firstPlacementDeptId, targetPath, departments, navigationPages);
         router.push(appendUrlParams(url));
-    }, [selectedDepartmentId, pageForm, pageDepartments, departments, navigationPages, allFoldersById, setError, setPageForm, setCreatePageOpen, clearSelectedItems, invalidateEntriesAndFrames, router, appendUrlParams]);
+    }, [selectedDepartmentId, pageForm, pageDepartments, departments, navigationPages, allFoldersById, setError, setPageForm, setCreatePageOpen, clearSelectedItems, updateDirectory, invalidateEntriesAndFrames, router, appendUrlParams]);
 
     const handleUpdateFolder = useCallback(async (entry: DirectoryEntry) => {
         if (!selectedDepartmentId) return;
@@ -303,8 +329,11 @@ export const useDirectoryHandlers = ({
 
         setFolderForm(emptyForm);
         setEditFolderOpen(false);
-        invalidateEntriesAndFrames();
-    }, [selectedDepartmentId, folderForm, setError, setFolderForm, setEditFolderOpen, invalidateEntriesAndFrames]);
+        updateDirectory((current) => ({
+            ...current,
+            entries: current.entries.map((item) => item.id === entry.id ? { ...item, name, slug, emoji: folderForm.emoji || null } : item),
+        }));
+    }, [selectedDepartmentId, folderForm, setError, setFolderForm, setEditFolderOpen, updateDirectory]);
 
     const handleUpdatePage = useCallback(async (frame: Frame, placementIds: string[]) => {
         if (!selectedDepartmentId) return;
@@ -424,14 +453,37 @@ export const useDirectoryHandlers = ({
                 };
             });
 
-            await createDirectoryEntries(newEntries);
+            const createdEntries = await createDirectoryEntries(newEntries);
+
+            if (createdEntries.success && createdEntries.data) {
+                updateDirectory((current) => ({
+                    ...current,
+                    entries: [...current.entries, ...createdEntries.data],
+                }));
+            }
         }
 
         setPageForm(emptyForm);
         setEditPageOpen(false);
         clearSelectedItems(pagePlacements);
-        invalidateEntriesAndFrames();
-    }, [selectedDepartmentId, pageForm, pageDepartments, allFoldersById, setPageForm, setEditPageOpen, clearSelectedItems, invalidateEntriesAndFrames]);
+        updateDirectory((current) => ({
+            ...current,
+            frames: current.frames.map((item) => item.id === frame.id
+                ? {
+                    ...item,
+                    name,
+                    iframe_url: iframeUrl,
+                    description: pageForm.description.trim() || null,
+                    department_ids: pageDepartments.items.map((item) => item.id),
+                }
+                : item),
+            entries: current.entries
+                .filter((item) => !toRemove.some((placement) => placement.id === item.id))
+                .map((item) => item.frame_id === frame.id
+                    ? { ...item, name, slug, emoji: pageForm.emoji || null }
+                    : item),
+        }));
+    }, [selectedDepartmentId, pageForm, pageDepartments, allFoldersById, setPageForm, setEditPageOpen, clearSelectedItems, updateDirectory]);
 
     const handleDeleteFolder = useCallback((entry: DirectoryEntry) => {
         setDeleteTarget({ type: "folder", item: entry });
@@ -461,7 +513,10 @@ export const useDirectoryHandlers = ({
             setEditFolderOpen(false);
             setDeleteTarget(null);
             setIsDeleting(false);
-            invalidateEntriesAndFrames();
+            updateDirectory((current) => ({
+                ...current,
+                entries: current.entries.filter((item) => item.id !== entry.id),
+            }));
 
             // Navigate back to parent or department root
             if (entry.parent_id) {
@@ -491,7 +546,11 @@ export const useDirectoryHandlers = ({
             setEditPageOpen(false);
             setDeleteTarget(null);
             setIsDeleting(false);
-            invalidateEntriesAndFrames();
+            updateDirectory((current) => ({
+                ...current,
+                frames: current.frames.filter((item) => item.id !== frame.id),
+                entries: current.entries.filter((item) => item.frame_id !== frame.id),
+            }));
 
             // Navigate back to parent folder or department root
             if (activeEntry?.parent_id) {
@@ -509,7 +568,7 @@ export const useDirectoryHandlers = ({
                 router.push(appendUrlParams(url));
             }
         }
-    }, [deleteTarget, activeEntry, departments, navigationPages, entriesById, pathById, setError, setIsDeleting, setDeleteConfirmOpen, setEditFolderOpen, setEditPageOpen, setDeleteTarget, invalidateEntriesAndFrames, router, appendUrlParams]);
+    }, [deleteTarget, activeEntry, departments, navigationPages, entriesById, pathById, setError, setIsDeleting, setDeleteConfirmOpen, setEditFolderOpen, setEditPageOpen, setDeleteTarget, updateDirectory, router, appendUrlParams]);
 
     const handleFolderSelected = useCallback((key: string | number) => {
         if (key === "__create_new__") {
