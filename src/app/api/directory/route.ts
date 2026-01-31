@@ -74,7 +74,11 @@ const getDirectoryData = unstable_cache(async () => {
 export async function GET() {
     try {
         const data = await getDirectoryData();
-        return NextResponse.json(data);
+        return NextResponse.json(data, {
+            headers: {
+                "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+            },
+        });
     } catch (error) {
         console.error("Directory API error:", error);
     }
@@ -127,6 +131,10 @@ export async function GET() {
             frames: frames ?? [],
             navigationPages: navigationPagesConfig?.value ?? [],
             divisionOrder: divisionOrderConfig?.value ?? [],
+        }, {
+            headers: {
+                "Cache-Control": "private, no-store",
+            },
         });
     } catch (error) {
         console.error("Directory API fallback error:", error);

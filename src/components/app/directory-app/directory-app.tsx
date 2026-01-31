@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import { getDepartmentSlug } from "@/utils/department-slugs";
 
@@ -52,6 +53,9 @@ export const DirectoryApp = ({
     onToggleFavorite,
     onFullscreen,
 }: DirectoryAppProps) => {
+    const FOLDER_BATCH_SIZE = 48;
+    const PAGE_BATCH_SIZE = 48;
+
     const { worker } = useAuth();
 
     const {
@@ -87,6 +91,50 @@ export const DirectoryApp = ({
         entriesOverride,
         framesOverride,
     });
+
+    const [folderRenderCount, setFolderRenderCount] = useState(FOLDER_BATCH_SIZE);
+    const [pageRenderCount, setPageRenderCount] = useState(PAGE_BATCH_SIZE);
+    const folderSentinelRef = useRef<HTMLDivElement>(null);
+    const pageSentinelRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        setFolderRenderCount(FOLDER_BATCH_SIZE);
+        setPageRenderCount(PAGE_BATCH_SIZE);
+    }, [selectedDepartmentId, activeEntry?.id, isExternalPagesView]);
+
+    useEffect(() => {
+        const node = folderSentinelRef.current;
+        if (!node || visibleFolders.length <= folderRenderCount) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) {
+                    setFolderRenderCount((count) => Math.min(count + FOLDER_BATCH_SIZE, visibleFolders.length));
+                }
+            },
+            { rootMargin: "200px" }
+        );
+
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [visibleFolders.length, folderRenderCount]);
+
+    useEffect(() => {
+        const node = pageSentinelRef.current;
+        if (!node || visiblePages.length <= pageRenderCount) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) {
+                    setPageRenderCount((count) => Math.min(count + PAGE_BATCH_SIZE, visiblePages.length));
+                }
+            },
+            { rootMargin: "200px" }
+        );
+
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [visiblePages.length, pageRenderCount]);
 
     const {
         pageDepartments,
@@ -263,6 +311,15 @@ export const DirectoryApp = ({
         replaceSelectedItems,
     });
 
+    const visibleFoldersToRender = useMemo(
+        () => visibleFolders.slice(0, folderRenderCount),
+        [visibleFolders, folderRenderCount]
+    );
+    const visiblePagesToRender = useMemo(
+        () => visiblePages.slice(0, pageRenderCount),
+        [visiblePages, pageRenderCount]
+    );
+
     const outerClassName = variant === "full" ? "min-h-dvh bg-primary" : "w-full h-full";
     const mainClassName = variant === "full" ? "flex min-h-dvh flex-col" : "flex h-full min-h-0 flex-col";
 
@@ -300,7 +357,7 @@ export const DirectoryApp = ({
                             {(visibleFolders.length > 0 || (!activeEntry && hasExternalPages && !isExternalPagesView)) && (
                                 <div className="mb-8">
                                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                        {visibleFolders.map((child) => {
+                                        {visibleFoldersToRender.map((child) => {
                                             const path = pathById.get(child.id) ?? [child.slug];
                                             const childCount = childrenByParent.get(child.id)?.length ?? 0;
                                             return (
@@ -323,6 +380,9 @@ export const DirectoryApp = ({
                                             />
                                         )}
                                     </div>
+                                    {visibleFolders.length > folderRenderCount && (
+                                        <div ref={folderSentinelRef} className="h-1 w-full" aria-hidden="true" />
+                                    )}
                                 </div>
                             )}
 
@@ -330,7 +390,7 @@ export const DirectoryApp = ({
                             {visiblePages.length > 0 && (
                                 <div>
                                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                        {visiblePages.map((child) => {
+                                        {visiblePagesToRender.map((child) => {
                                             // Use externalPathById for external pages, pathById for regular pages
                                             const path = isExternalPagesView
                                                 ? externalPathById.get(child.id) ?? [child.slug]
@@ -353,6 +413,9 @@ export const DirectoryApp = ({
                                             );
                                         })}
                                     </div>
+                                    {visiblePages.length > pageRenderCount && (
+                                        <div ref={pageSentinelRef} className="h-1 w-full" aria-hidden="true" />
+                                    )}
                                 </div>
                             )}
 

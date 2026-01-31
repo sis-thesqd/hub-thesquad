@@ -399,12 +399,21 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
                 return;
             }
 
-            invalidateEntriesAndFrames();
+            if (result.frame) {
+                updateDirectory((current) => ({
+                    ...current,
+                    frames: [...current.frames, result.frame!],
+                    entries: result.entries ? [...current.entries, ...result.entries] : current.entries,
+                }));
+            } else {
+                invalidateEntriesAndFrames();
+            }
+
             setHomeCreatePageOpen(false);
         } catch (err) {
             console.error("Failed to create page:", err);
         }
-    }, [homePageForm, homePageDepartments.items, homePagePlacements.items, entries, invalidateEntriesAndFrames]);
+    }, [homePageForm, homePageDepartments.items, homePagePlacements.items, entries, updateDirectory, invalidateEntriesAndFrames]);
 
     const handleFullscreen = useCallback(() => {
         if (activeEntryInfo?.isPage && activeEntryInfo.frameId) {

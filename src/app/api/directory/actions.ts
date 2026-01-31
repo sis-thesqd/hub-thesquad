@@ -162,7 +162,7 @@ export async function createPage(data: {
         slug: string;
         emoji: string | null;
     }>;
-}): Promise<{ success: boolean; frameId?: string; error?: string }> {
+}): Promise<{ success: boolean; frame?: Frame; entries?: DirectoryEntry[]; error?: string }> {
     try {
         const email = await getAuthenticatedEmail();
         if (!email) return { success: false, error: "Not authenticated" };
@@ -202,9 +202,10 @@ export async function createPage(data: {
             updated_by: workerId,
         }));
 
-        const { error: entriesError } = await supabase
+        const { data: entries, error: entriesError } = await supabase
             .from("sh_directory")
-            .insert(directoryEntries);
+            .insert(directoryEntries)
+            .select();
 
         if (entriesError) {
             console.error("Failed to create directory entries:", entriesError);
@@ -214,7 +215,7 @@ export async function createPage(data: {
         }
 
         revalidateDirectory();
-        return { success: true, frameId: frame.id };
+        return { success: true, frame, entries: entries ?? [] };
     } catch (err) {
         console.error("Create page error:", err);
         return { success: false, error: "An unexpected error occurred" };
