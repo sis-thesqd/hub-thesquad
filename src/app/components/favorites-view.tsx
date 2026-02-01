@@ -13,6 +13,7 @@ import { getDepartmentSlug } from "@/utils/department-slugs";
 import type { DirectoryEntry, Frame, NavigationPage, RipplingDepartment, ShFavorite } from "@/utils/supabase/types";
 import { getIconByName } from "@/utils/icon-map";
 import { cx } from "@/utils/cx";
+import { File02 } from "@untitledui/icons";
 
 interface FavoritesViewProps {
     favorites: ShFavorite[];
@@ -20,7 +21,7 @@ interface FavoritesViewProps {
     frames: Frame[];
     departments: RipplingDepartment[];
     navigationPages: NavigationPage[];
-    onToggleFavorite: (entryId?: string, departmentId?: string) => void;
+    onToggleFavorite: (entryId?: string, departmentId?: string, articlePath?: string) => void;
     isLoading?: boolean;
     /** True once favorites data has been fetched at least once */
     hasLoaded?: boolean;
@@ -38,7 +39,7 @@ export const FavoritesView = ({
 }: FavoritesViewProps) => {
     const appendUrlParams = useAppendUrlParams();
 
-    const { favoriteDepartments, favoriteFolders, favoritePages } = useMemo(() => {
+    const { favoriteDepartments, favoriteFolders, favoritePages, favoriteArticles } = useMemo(() => {
         const entriesById = createEntriesMap(entries);
         const framesById = new Map(frames.map((f) => [f.id, f]));
 
@@ -58,6 +59,10 @@ export const FavoritesView = ({
             path: string[];
             frame: Frame | null;
             departmentSlug: string;
+        }> = [];
+        const articleFavorites: Array<{
+            path: string;
+            label: string;
         }> = [];
 
         for (const fav of favorites) {
@@ -81,6 +86,9 @@ export const FavoritesView = ({
                         folderFavorites.push({ entry, path, childCount, departmentSlug });
                     }
                 }
+            } else if (fav.article_path) {
+                const label = fav.article_path.split("/").pop()?.replace(/\.md$/, "") ?? fav.article_path;
+                articleFavorites.push({ path: fav.article_path, label });
             }
         }
 
@@ -88,13 +96,15 @@ export const FavoritesView = ({
             favoriteDepartments: deptFavorites,
             favoriteFolders: folderFavorites,
             favoritePages: pageFavorites,
+            favoriteArticles: articleFavorites,
         };
     }, [favorites, entries, frames, departments, navigationPages]);
 
     const hasNoFavorites =
         favoriteDepartments.length === 0 &&
         favoriteFolders.length === 0 &&
-        favoritePages.length === 0;
+        favoritePages.length === 0 &&
+        favoriteArticles.length === 0;
 
     // Only show loading if data hasn't loaded yet (not cached, not fetched)
     // If hasLoaded is true (from prefetch cache), skip loader entirely
@@ -211,6 +221,46 @@ export const FavoritesView = ({
                                 isFavorite
                                 onToggleFavorite={() => onToggleFavorite(entry.id)}
                             />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Favorite Articles */}
+            {favoriteArticles.length > 0 && (
+                <div>
+                    <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-tertiary">
+                        Articles
+                    </h2>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {favoriteArticles.map(({ path, label }) => (
+                            <Link
+                                key={path}
+                                href={`/wiki/${path}`}
+                                className="group flex items-start gap-4 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
+                            >
+                                <div className="flex size-12 items-center justify-center rounded-lg bg-secondary">
+                                    <File02 className="size-6 text-fg-tertiary group-hover:text-brand-secondary" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate font-medium text-primary">
+                                        {label}
+                                    </p>
+                                    <p className="truncate text-xs text-tertiary">{path}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        onToggleFavorite(undefined, undefined, path);
+                                    }}
+                                    className="flex size-8 cursor-pointer items-center justify-center rounded-md text-warning-primary transition hover:bg-secondary"
+                                    title="Remove from favorites"
+                                >
+                                    <Star01 className="size-4 fill-warning-primary" />
+                                </button>
+                            </Link>
                         ))}
                     </div>
                 </div>

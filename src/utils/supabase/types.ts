@@ -3,7 +3,7 @@ export type RipplingDepartment = {
     name: string | null;
 };
 
-export type DirectoryEntryType = "frame" | "folder";
+export type DirectoryEntryType = "frame" | "folder" | "article";
 
 export type DirectoryEntry = {
     id: string;
@@ -57,5 +57,6 @@ export type ShFavorite = {
     user_id: string;
     entry_id: string | null;
     department_id: string | null;
+    article_path?: string | null;
     created_at: string;
 };

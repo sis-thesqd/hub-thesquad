@@ -81,6 +81,8 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
         return null;
     }
 
+    const mobileItems = footerItems.length > 0 ? [...items, { divider: true }, ...footerItems] : items;
+
     const mainSidebar = (
         <aside
             style={{ width: MAIN_SIDEBAR_WIDTH }}
@@ -338,7 +340,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                         </a>
                     </div>
 
-                    <NavList items={items} />
+                    <NavList activeUrl={activeUrl} items={mobileItems} />
 
                     <div className="mt-auto flex flex-col gap-5 px-2 py-4">
                         <div className="relative flex items-center gap-3 border-secondary pt-6 pr-8 pl-2">

@@ -48,12 +48,15 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
     const hasLoadedOnce = isFetched || !!cachedData;
 
     const isFavorite = useCallback(
-        (entryId?: string, departmentId?: string): boolean => {
+        (entryId?: string, departmentId?: string, articlePath?: string): boolean => {
             if (entryId) {
                 return favorites.some((f) => f.entry_id === entryId);
             }
             if (departmentId) {
                 return favorites.some((f) => f.department_id === departmentId);
+            }
+            if (articlePath) {
+                return favorites.some((f) => f.article_path === articlePath);
             }
             return false;
         },
@@ -61,11 +64,15 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
     );
 
     const toggleFavorite = useCallback(
-        async (entryId?: string, departmentId?: string) => {
+        async (entryId?: string, departmentId?: string, articlePath?: string) => {
             if (!userId) return;
 
             const existing = favorites.find((f) =>
-                entryId ? f.entry_id === entryId : f.department_id === departmentId
+                entryId
+                    ? f.entry_id === entryId
+                    : departmentId
+                      ? f.department_id === departmentId
+                      : f.article_path === articlePath
             );
 
             const isAdding = !existing;
@@ -83,6 +90,7 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
                     user_id: userId,
                     entry_id: entryId ?? null,
                     department_id: departmentId ?? null,
+                    article_path: articlePath ?? null,
                     created_at: new Date().toISOString(),
                 };
                 queryClient.setQueryData<ShFavorite[]>(
@@ -103,7 +111,7 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
             ));
 
             // Call server action
-            const result = await toggleFavoriteAction(userId, entryId, departmentId);
+            const result = await toggleFavoriteAction(userId, entryId, departmentId, articlePath);
 
             if (!result.success) {
                 console.error("Failed to toggle favorite:", result.error);
@@ -127,6 +135,11 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
         [favorites]
     );
 
+    const favoriteArticlePaths = useMemo(
+        () => favorites.filter((f) => f.article_path).map((f) => f.article_path as string),
+        [favorites]
+    );
+
     return {
         favorites,
         // Show loading only if we haven't loaded data yet
@@ -137,6 +150,7 @@ export const useFavorites = ({ userId }: UseFavoritesOptions) => {
         toggleFavorite,
         favoriteEntryIds,
         favoriteDepartmentIds,
+        favoriteArticlePaths,
         refreshFavorites: refetch,
     };
 };

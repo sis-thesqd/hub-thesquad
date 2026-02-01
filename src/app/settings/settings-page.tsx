@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
 import { useDirectoryQueries, directoryKeys } from "@/hooks/use-directory-queries";
+import { Lightbulb02 } from "@untitledui/icons";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 import { DirectoryCommandMenu } from "@/components/app/directory-app/components/directory-command-menu";
 import { TabList, Tabs } from "@/components/application/tabs/tabs";
@@ -336,11 +337,20 @@ export const SettingsPage = () => {
         }
     }, [editedDivisionOrder, hasDivisionOrderChanges, queryClient]);
 
+    const footerItems = useMemo(() => ([
+        {
+            label: "Wiki",
+            href: "/wiki",
+            icon: Lightbulb02,
+        },
+    ]), []);
+
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
             <SidebarNavigationSlim
                 hideBorder
                 items={departmentItems}
+                footerItems={footerItems}
                 onSearchClick={() => setCommandMenuOpen(true)}
             />
 

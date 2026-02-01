@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type React from "react";
 import dynamic from "next/dynamic";
+import { Lightbulb02 } from "@untitledui/icons";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 import type { ActiveEntryInfo } from "@/components/app/directory-app/types";
 import { getDepartmentIdFromSlug, getDepartmentSlug } from "@/utils/department-slugs";
@@ -101,12 +102,21 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
         return [{ id: "root", label: "Top level (select department in folder placement)" }];
     }, []);
 
+    const footerItems = useMemo(() => ([
+        {
+            label: "Wiki",
+            href: "/wiki",
+            icon: Lightbulb02,
+        },
+    ]), []);
+
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
             <SidebarNavigationSlim
                 hideBorder
                 activeUrl={selectedDepartmentId ? `/${getDepartmentSlug(selectedDepartmentId, departments, navigationPages)}` : undefined}
                 items={sidebarItems}
+                footerItems={footerItems}
                 onSearchClick={() => setCommandMenuOpen(true)}
             />
 

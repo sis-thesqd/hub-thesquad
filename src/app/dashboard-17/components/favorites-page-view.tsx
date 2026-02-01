@@ -1,15 +1,15 @@
 "use client";
 
 import { FavoritesView } from "@/app/components/favorites-view";
-import type { Department, NavigationPage, DirectoryEntry, Frame } from "@/utils/supabase/types";
+import type { Department, NavigationPage, DirectoryEntry, Frame, ShFavorite } from "@/utils/supabase/types";
 
 interface FavoritesPageViewProps {
-    favorites: Array<{ id: string; entry_id: string | null; department_id: string | null }>;
+    favorites: ShFavorite[];
     entries: DirectoryEntry[];
     frames: Frame[];
     departments: Department[];
     navigationPages: NavigationPage[];
-    onToggleFavorite: (entryId?: string, departmentId?: string) => void;
+    onToggleFavorite: (entryId?: string, departmentId?: string, articlePath?: string) => void;
     isLoading: boolean;
     hasLoaded: boolean;
 }

@@ -18,7 +18,7 @@ interface DirectoryPageViewProps {
     favoriteEntryIds: Set<string>;
     onHeaderContentChange: (content: React.ReactNode) => void;
     onActiveEntryChange: (info: ActiveEntryInfo) => void;
-    onToggleFavorite: (entryId?: string, departmentId?: string) => void;
+    onToggleFavorite: (entryId?: string, departmentId?: string, articlePath?: string) => void;
     onFullscreen: () => void;
 }
 

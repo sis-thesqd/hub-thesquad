@@ -6,7 +6,8 @@ import { getAuthenticatedEmail } from "./auth";
 export async function toggleFavorite(
     userId: string,
     entryId?: string,
-    departmentId?: string
+    departmentId?: string,
+    articlePath?: string
 ): Promise<{ success: boolean; isFavorite?: boolean; error?: string }> {
     try {
         const email = await getAuthenticatedEmail();
@@ -24,8 +25,10 @@ export async function toggleFavorite(
             query = query.eq("entry_id", entryId);
         } else if (departmentId) {
             query = query.eq("department_id", departmentId);
+        } else if (articlePath) {
+            query = query.eq("article_path", articlePath);
         } else {
-            return { success: false, error: "Must provide entryId or departmentId" };
+            return { success: false, error: "Must provide entryId, departmentId, or articlePath" };
         }
 
         const { data: existing } = await query.maybeSingle();
@@ -49,6 +52,7 @@ export async function toggleFavorite(
                     user_id: userId,
                     entry_id: entryId ?? null,
                     department_id: departmentId ?? null,
+                    article_path: articlePath ?? null,
                 });
 
             if (error) {
