@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, Copy01, Edit05, Expand06, Star01 } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
@@ -29,6 +29,9 @@ export const EmbeddedHeaderContent = ({
     const urlParams = useUrlParams();
     const clipboard = useClipboard();
     const { worker, userEmail } = useAuth();
+    const [menuOpen, setMenuOpen] = useState(false);
+    const fullscreenParam = urlParams.get("fullscreen");
+    const isFullscreen = fullscreenParam === "true";
 
     // Build URL with merged params and path segments (same logic as IframeView)
     const iframeUrlWithParams = useMemo(() => {
@@ -93,12 +96,20 @@ export const EmbeddedHeaderContent = ({
     }, [activeFrame.iframe_url, urlParams, pathSegments, worker, userEmail]);
 
     const handleOpenInNewTab = () => {
+        setMenuOpen(false);
         window.open(iframeUrlWithParams, "_blank", "noopener,noreferrer");
     };
 
     const handleCopyUrl = async () => {
+        setMenuOpen(false);
         await clipboard.copy(iframeUrlWithParams);
     };
+
+    useEffect(() => {
+        if (isFullscreen) {
+            setMenuOpen(false);
+        }
+    }, [isFullscreen]);
 
     return (
         <div className="flex items-center gap-2">
@@ -116,25 +127,32 @@ export const EmbeddedHeaderContent = ({
                 </button>
             )}
             <UrlParamsInfoSlideout iframeUrl={activeFrame.iframe_url} />
-            <Dropdown.Root>
+            <Dropdown.Root isOpen={menuOpen} onOpenChange={setMenuOpen}>
                 <Button
                     size="sm"
                     color="primary"
+                    isDisabled={isFullscreen}
                 >
                     Actions
                 </Button>
-                <Dropdown.Popover>
+                <Dropdown.Popover isOpen={!isFullscreen}>
                     <Dropdown.Menu>
                         <Dropdown.Item
                             icon={Edit05}
-                            onAction={onEdit}
+                            onAction={() => {
+                                setMenuOpen(false);
+                                onEdit();
+                            }}
                         >
                             Edit
                         </Dropdown.Item>
                         {onFullscreen && (
                             <Dropdown.Item
                                 icon={Expand06}
-                                onAction={onFullscreen}
+                                onAction={() => {
+                                    setMenuOpen(false);
+                                    onFullscreen();
+                                }}
                             >
                                 Open fullscreen
                             </Dropdown.Item>

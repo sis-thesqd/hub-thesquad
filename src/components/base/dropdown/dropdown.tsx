@@ -105,9 +105,14 @@ const DropdownMenu = <T extends object>(props: DropdownMenuProps<T>) => {
     );
 };
 
-interface DropdownPopoverProps extends AriaPopoverProps {}
+interface DropdownPopoverProps extends AriaPopoverProps {
+    isOpen?: boolean;
+}
 
-const DropdownPopover = (props: DropdownPopoverProps) => {
+const DropdownPopover = ({ isOpen, ...props }: DropdownPopoverProps) => {
+    if (isOpen === false) {
+        return null;
+    }
     return (
         <AriaPopover
             placement="bottom right"
