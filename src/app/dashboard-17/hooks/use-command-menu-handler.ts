@@ -13,7 +13,7 @@ export const useCommandMenuHandler = (
     const router = useRouter();
     const appendUrlParams = useAppendUrlParams();
 
-    const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
+    const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page" | "wiki", id: string) => {
         const entriesById = createEntriesMap(entries);
 
         if (type === "department") {
@@ -33,6 +33,8 @@ export const useCommandMenuHandler = (
                 const url = buildDepartmentUrl(entry.department_id, pathParts, departments, navigationPages);
                 router.push(appendUrlParams(url));
             }
+        } else if (type === "wiki") {
+            router.push(appendUrlParams(`/wiki/${id}`));
         }
     }, [appendUrlParams, entries, departments, navigationPages, router]);
 

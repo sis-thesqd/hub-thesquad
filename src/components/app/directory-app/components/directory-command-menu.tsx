@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { File06, Folder, FolderClosed } from "@untitledui/icons";
+import { useEffect, useMemo, useState } from "react";
+import { File02, File06, Folder, FolderClosed } from "@untitledui/icons";
 import type { Selection } from "react-aria-components";
 import { Heading as AriaHeading } from "react-aria-components";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -19,7 +19,7 @@ type DirectoryCommandMenuProps = {
     entries: DirectoryEntry[];
     frames: Frame[];
     navigationPages: NavigationPage[];
-    onSelect: (type: "department" | "folder" | "page", id: string) => void;
+    onSelect: (type: "department" | "folder" | "page" | "wiki", id: string) => void;
 };
 
 export const DirectoryCommandMenu = ({
@@ -36,6 +36,38 @@ export const DirectoryCommandMenu = ({
         e.preventDefault();
         onOpenChange(true);
     }, { enableOnFormTags: true });
+
+    const [query, setQuery] = useState("");
+    const [wikiResults, setWikiResults] = useState<Array<{ name: string; path: string }>>([]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setQuery("");
+            setWikiResults([]);
+            return;
+        }
+        if (!query.trim()) {
+            setWikiResults([]);
+            return;
+        }
+
+        const timeout = setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
+                const data = await response.json();
+                const results = Array.isArray(data?.results) ? data.results : [];
+                setWikiResults(results.map((result: { name: string; path: string }) => ({
+                    name: result.name,
+                    path: result.path,
+                })));
+            } catch (error) {
+                console.error("Wiki search failed:", error);
+                setWikiResults([]);
+            }
+        }, 250);
+
+        return () => clearTimeout(timeout);
+    }, [isOpen, query]);
 
     const groups = useMemo(() => {
         // Departments group - use icons from navigationPages like home page
@@ -111,12 +143,23 @@ export const DirectoryCommandMenu = ({
             };
         });
 
+        const wikiItems: CommandDropdownMenuItemProps[] = wikiResults.map((result) => ({
+            id: `wiki-${result.path}`,
+            type: "icon" as const,
+            label: result.name.replace(/\\.md$/, ""),
+            icon: File02,
+            size: "sm" as const,
+            description: result.path,
+            stacked: true,
+        }));
+
         return [
             { id: "departments", title: "Departments", items: departmentItems },
             { id: "folders", title: "Folders", items: folderItems },
             { id: "pages", title: "Pages", items: pageItems },
+            { id: "wiki", title: "Wiki", items: wikiItems },
         ].filter((group) => group.items.length > 0);
-    }, [departments, entries, frames, navigationPages]);
+    }, [departments, entries, frames, navigationPages, wikiResults]);
 
     const handleSelectionChange = (selection: Selection) => {
         if (selection === "all") return;
@@ -130,6 +173,8 @@ export const DirectoryCommandMenu = ({
             onSelect("folder", keyStr.replace("folder-", ""));
         } else if (keyStr.startsWith("page-")) {
             onSelect("page", keyStr.replace("page-", ""));
+        } else if (keyStr.startsWith("wiki-")) {
+            onSelect("wiki", keyStr.replace("wiki-", ""));
         }
         onOpenChange(false);
     };
@@ -140,6 +185,8 @@ export const DirectoryCommandMenu = ({
             items={groups}
             onOpenChange={onOpenChange}
             onSelectionChange={handleSelectionChange}
+            inputValue={query}
+            onInputChange={setQuery}
             emptyState={
                 <EmptyState size="sm" className="overflow-hidden p-6 pb-10">
                     <EmptyState.Header>
@@ -149,7 +196,7 @@ export const DirectoryCommandMenu = ({
                     <EmptyState.Content className="mb-0">
                         <EmptyState.Title>No results found</EmptyState.Title>
                         <EmptyState.Description>
-                            Your search did not match any departments, folders, or pages.
+                            Your search did not match any departments, folders, pages, or wiki articles.
                         </EmptyState.Description>
                     </EmptyState.Content>
                 </EmptyState>

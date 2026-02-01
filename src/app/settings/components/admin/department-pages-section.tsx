@@ -20,6 +20,7 @@ interface DepartmentPagesSectionProps {
     onIconChange: (departmentId: string, newIcon: string) => void;
     onSlugChange: (departmentId: string, newSlug: string) => void;
     onDivisionChange: (departmentId: string, newDivision: string) => void;
+    onDocsFolderChange: (departmentId: string, newFolder: string) => void;
 }
 
 export const DepartmentPagesSection = ({
@@ -33,6 +34,7 @@ export const DepartmentPagesSection = ({
     onIconChange,
     onSlugChange,
     onDivisionChange,
+    onDocsFolderChange,
 }: DepartmentPagesSectionProps) => {
     return (
         <>
@@ -129,6 +131,17 @@ export const DepartmentPagesSection = ({
                                             placeholder="url-slug"
                                             value={page.slug}
                                             onChange={(value) => onSlugChange(page.department_id, value)}
+                                        />
+                                    </div>
+
+                                    <div className="w-72">
+                                        <Input
+                                            label="Docs folder"
+                                            aria-label="Docs folder"
+                                            size="sm"
+                                            placeholder="docs folder path"
+                                            value={page.docs_folder || ""}
+                                            onChange={(value) => onDocsFolderChange(page.department_id, value)}
                                         />
                                     </div>
                                 </div>

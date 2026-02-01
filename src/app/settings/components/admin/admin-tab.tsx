@@ -24,6 +24,7 @@ interface AdminTabProps {
     onIconChange: (departmentId: string, newIcon: string) => void;
     onSlugChange: (departmentId: string, newSlug: string) => void;
     onDivisionChange: (departmentId: string, newDivision: string) => void;
+    onDocsFolderChange: (departmentId: string, newFolder: string) => void;
     onMoveDivision: (index: number, direction: "up" | "down") => void;
     onOpenDeleteDivision: (division: string) => void;
     onOpenAddDivisionModal: () => void;
@@ -54,6 +55,7 @@ export const AdminTab = ({
     onIconChange,
     onSlugChange,
     onDivisionChange,
+    onDocsFolderChange,
     onMoveDivision,
     onOpenDeleteDivision,
     onOpenAddDivisionModal,
@@ -103,18 +105,19 @@ export const AdminTab = ({
 
             <hr className="border-secondary" />
 
-            <DepartmentPagesSection
-                editedPages={editedPages}
-                editedDivisionOrder={editedDivisionOrder}
-                departments={departments}
-                hasChanges={hasChanges}
-                isSaving={isSaving}
-                navPagesLoading={navPagesLoading}
-                onSave={onSave}
-                onIconChange={onIconChange}
-                onSlugChange={onSlugChange}
-                onDivisionChange={onDivisionChange}
-            />
+                <DepartmentPagesSection
+                    editedPages={editedPages}
+                    editedDivisionOrder={editedDivisionOrder}
+                    departments={departments}
+                    hasChanges={hasChanges}
+                    isSaving={isSaving}
+                    navPagesLoading={navPagesLoading}
+                    onSave={onSave}
+                    onIconChange={onIconChange}
+                    onSlugChange={onSlugChange}
+                    onDivisionChange={onDivisionChange}
+                    onDocsFolderChange={onDocsFolderChange}
+                />
         </>
     );
 };

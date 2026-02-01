@@ -11,6 +11,7 @@ import { useAuth } from "@/providers/auth-provider";
 import { useUrlParams } from "@/hooks/use-url-params";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useDirectoryQueries } from "@/hooks/use-directory-queries";
+import { getIconByName } from "@/utils/icon-map";
 import { useDepartmentItems, useFolderOptions } from "./dashboard-17/hooks/use-department-items";
 import { useFullscreen } from "./dashboard-17/hooks/use-fullscreen";
 import { useCommandMenuHandler } from "./dashboard-17/hooks/use-command-menu-handler";

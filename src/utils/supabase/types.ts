@@ -42,6 +42,7 @@ export type NavigationPage = {
     title: string;
     icon: string;
     division?: string;
+    docs_folder?: string | null;
 };
 
 export type ShConfig<T = unknown> = {

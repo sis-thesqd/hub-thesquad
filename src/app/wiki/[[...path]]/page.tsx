@@ -3,10 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { Lightbulb02, Star01 } from "@untitledui/icons";
+import { Folder, Lightbulb02, Star01 } from "@untitledui/icons";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 import { WikiBreadcrumb } from "@/components/app/wiki/wiki-breadcrumb";
-import { WikiSearch } from "@/components/app/wiki/wiki-search";
 import { WikiMarkdown } from "@/components/app/wiki/wiki-markdown";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { useAuth } from "@/providers/auth-provider";
@@ -16,6 +15,7 @@ import { useDepartmentItems } from "@/app/dashboard-17/hooks/use-department-item
 import { useCommandMenuHandler } from "@/app/dashboard-17/hooks/use-command-menu-handler";
 import type { FileNode } from "@/utils/wiki/types";
 import Link from "next/link";
+import { getIconByName } from "@/utils/icon-map";
 
 const DirectoryCommandMenu = dynamic(
     () => import("@/components/app/directory-app/components/directory-command-menu").then((mod) => mod.DirectoryCommandMenu),
@@ -39,6 +39,14 @@ export default function WikiPage() {
 
     const pathSegments = (params.path as string[] | undefined) ?? [];
     const filePath = pathSegments.length ? pathSegments.join("/") : "";
+
+    const docsFolderMap = useMemo(() => {
+        return new Map(
+            navigationPages
+                .filter((page) => page.docs_folder)
+                .map((page) => [page.docs_folder as string, page]),
+        );
+    }, [navigationPages]);
 
     const footerItems = useMemo(
         () => [
@@ -116,8 +124,21 @@ export default function WikiPage() {
     const isArticleFavorite = filePath ? isFavorite(undefined, undefined, filePath) : false;
 
     const topLevelFolders = tree.filter((node) => node.type === "dir");
-    const topLevelFiles = tree.filter((node) => node.type === "file");
-    const folderItems = isFolder ? activeNode?.children ?? [] : [];
+    const topLevelFiles = tree.filter((node) => node.type === "file" && !/readme\\.md$/i.test(node.name));
+    const folderItems = isFolder ? (activeNode?.children ?? []).filter((node) => node.type === "dir" || !/readme\.md$/i.test(node.name)) : [];
+
+    const formatFolderLabel = (value: string) => {
+        const title = value
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+
+        return title
+            .replace(/\bN8n\b/g, "N8N")
+            .replace(/\bSisx\b/g, "SISX")
+            .replace(/\bSis(\d+)\b/g, "SIS$1")
+            .replace(/\bSis\b/g, "SIS")
+            .replace(/\bPrf\b/g, "PRF");
+    };
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
@@ -141,10 +162,11 @@ export default function WikiPage() {
             <main className="min-w-0 flex-1 overflow-hidden lg:pt-2 lg:pl-1">
                 <div className="flex h-full flex-col overflow-hidden border-secondary lg:rounded-tl-[24px] lg:border-t lg:border-l">
                     <header className="flex flex-wrap items-center gap-3 border-secondary bg-primary px-4 py-4 lg:px-8">
-                        <WikiBreadcrumb path={filePath} className="flex-1" />
-                        <div className="w-full max-w-sm">
-                            <WikiSearch />
-                        </div>
+                        {filePath ? (
+                            <WikiBreadcrumb path={filePath} className="flex-1" />
+                        ) : (
+                            <h1 className="text-lg font-semibold text-primary">Wiki</h1>
+                        )}
                         {filePath && (
                             <ButtonUtility
                                 tooltip={isArticleFavorite ? "Remove from favorites" : "Add to favorites"}
@@ -160,31 +182,27 @@ export default function WikiPage() {
                             <p className="text-sm text-tertiary">Loading documentation...</p>
                         ) : isFolder || !filePath ? (
                             <div className="space-y-8">
-                                {!filePath && (
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-primary">Top-level folders</h2>
-                                        <p className="mt-1 text-sm text-tertiary">
-                                            Choose a section to browse documentation.
-                                        </p>
-                                    </div>
-                                )}
-
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                    {(filePath ? folderItems : topLevelFolders).map((node) => (
+                                    {(filePath ? folderItems : topLevelFolders).map((node) => {
+                                        const mappedPage = docsFolderMap.get(node.path);
+                                        const Icon = Folder;
+                                        return (
                                         <Link
                                             key={node.path}
                                             href={`/wiki/${node.path}`}
                                             className="group flex items-center gap-4 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
                                         >
                                             <div className="flex size-12 items-center justify-center rounded-lg bg-secondary">
-                                                <Lightbulb02 className="size-6 text-fg-tertiary group-hover:text-brand-secondary" />
+                                                <Icon className="size-6 text-fg-tertiary group-hover:text-brand-secondary" />
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <p className="truncate font-medium text-primary">{node.name}</p>
-                                                <p className="truncate text-xs text-tertiary">{node.path}</p>
+                                                <p className="truncate font-medium text-primary">
+                                                    {mappedPage?.title ?? formatFolderLabel(node.name)}
+                                                </p>
                                             </div>
                                         </Link>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                                 {!filePath && topLevelFiles.length > 0 && (
@@ -199,7 +217,7 @@ export default function WikiPage() {
                                                     href={`/wiki/${node.path}`}
                                                     className="group flex items-center gap-3 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
                                                 >
-                                                    <Lightbulb02 className="size-5 text-fg-tertiary group-hover:text-brand-secondary" />
+                                                    <Folder className="size-5 text-fg-tertiary group-hover:text-brand-secondary" />
                                                     <div className="min-w-0 flex-1">
                                                         <p className="truncate text-sm font-medium text-primary">
                                                             {node.name.replace(/\\.md$/, "")}

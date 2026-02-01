@@ -139,6 +139,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                                             isCurrent && "bg-active"
                                         )}
                                         onClick={() => setCurrentItem(item)}
+                                        onMouseEnter={() => setCurrentItem(item)}
                                     >
                                         <Icon className={cx("size-5", isCurrent ? "text-fg-secondary" : "text-fg-quaternary")} />
                                     </AriaLink>
@@ -155,6 +156,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                                         isCurrent && "bg-active"
                                     )}
                                     onClick={() => setCurrentItem(item)}
+                                    onMouseEnter={() => setCurrentItem(item)}
                                 >
                                     <Icon className={cx("size-5 shrink-0", isCurrent ? "text-fg-secondary" : "text-fg-quaternary")} />
                                     <span className={cx("text-sm font-medium truncate", isCurrent ? "text-secondary_hover" : "text-secondary")}>{item.label}</span>
@@ -181,6 +183,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
                                                     isCurrent && "bg-active"
                                                 )}
                                                 onClick={() => setCurrentItem(item)}
+                                                onMouseEnter={() => setCurrentItem(item)}
                                             >
                                                 <Icon className={cx("size-5", isCurrent ? "text-fg-secondary" : "text-fg-quaternary")} />
                                             </AriaLink>
@@ -190,14 +193,15 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
 
                                 return (
                                     <li key={item.label}>
-                                        <AriaLink
-                                            href={hrefWithParams!}
-                                            className={cx(
-                                                "flex items-center gap-2 rounded-md px-2.5 py-1.5 transition hover:bg-primary_hover",
-                                                isCurrent && "bg-active"
-                                            )}
-                                            onClick={() => setCurrentItem(item)}
-                                        >
+                                    <AriaLink
+                                        href={hrefWithParams!}
+                                        className={cx(
+                                            "flex items-center gap-2 rounded-md px-2.5 py-1.5 transition hover:bg-primary_hover",
+                                            isCurrent && "bg-active"
+                                        )}
+                                        onClick={() => setCurrentItem(item)}
+                                        onMouseEnter={() => setCurrentItem(item)}
+                                    >
                                             <Icon className={cx("size-5 shrink-0", isCurrent ? "text-fg-secondary" : "text-fg-quaternary")} />
                                             <span className={cx("text-sm font-medium truncate", isCurrent ? "text-secondary_hover" : "text-secondary")}>{item.label}</span>
                                         </AriaLink>

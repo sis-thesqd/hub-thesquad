@@ -234,6 +234,12 @@ export const SettingsPage = () => {
         ));
     }, []);
 
+    const handleDocsFolderChange = useCallback((departmentId: string, newFolder: string) => {
+        setEditedPages(prev => prev.map(page =>
+            page.department_id === departmentId ? { ...page, docs_folder: newFolder } : page
+        ));
+    }, []);
+
     const handleSave = useCallback(async () => {
         if (!hasChanges) return;
 
@@ -420,6 +426,7 @@ export const SettingsPage = () => {
                                 onIconChange={handleIconChange}
                                 onSlugChange={handleSlugChange}
                                 onDivisionChange={handleDivisionChange}
+                                onDocsFolderChange={handleDocsFolderChange}
                                 onMoveDivision={handleMoveDivision}
                                 onOpenDeleteDivision={handleOpenDeleteDivision}
                                 onOpenAddDivisionModal={() => setAddDivisionModalOpen(true)}
