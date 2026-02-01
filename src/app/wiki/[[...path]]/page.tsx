@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { ArrowLeft, File02, Folder, Lightbulb02 } from "@untitledui/icons";
+import { ArrowLeft, Copy01, File02, Folder, InfoCircle, Lightbulb02, Star01 } from "@untitledui/icons";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 import { WikiMarkdown } from "@/components/app/wiki/wiki-markdown";
 import { WikiToc } from "@/components/app/wiki/wiki-toc";
+import { Button } from "@/components/base/buttons/button";
+import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { useAuth } from "@/providers/auth-provider";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useDirectoryQueries } from "@/hooks/use-directory-queries";
@@ -16,6 +18,8 @@ import { useCommandMenuHandler } from "@/app/dashboard-17/hooks/use-command-menu
 import type { FileNode } from "@/utils/wiki/types";
 import Link from "next/link";
 import { EmbeddedFolderHeader } from "@/components/app/directory-app/components/embedded-folder-header";
+import { useClipboard } from "@/hooks/use-clipboard";
+import { cx } from "@/utils/cx";
 
 const DirectoryCommandMenu = dynamic(
     () => import("@/components/app/directory-app/components/directory-command-menu").then((mod) => mod.DirectoryCommandMenu),
@@ -30,6 +34,7 @@ export default function WikiPage() {
     const { sidebarItems } = useDepartmentItems(departments, navigationPages, divisionOrder);
     const handleCommandMenuSelect = useCommandMenuHandler(entries, departments, navigationPages);
     const { toggleFavorite, isFavorite } = useFavorites({ userId: worker?.id });
+    const clipboard = useClipboard();
 
     const [content, setContent] = useState("");
     const [loading, setLoading] = useState(true);
@@ -189,7 +194,7 @@ export default function WikiPage() {
                             <h1 className="text-lg font-semibold text-primary">Wiki</h1>
                         )}
 
-                        {filePath ? (
+                        {filePath && activeNode?.type === "dir" ? (
                             <div className="ml-auto">
                                 <EmbeddedFolderHeader
                                     showEditButton
@@ -199,6 +204,53 @@ export default function WikiPage() {
                                     isFavorite={isArticleFavorite}
                                     onToggleFavorite={() => toggleFavorite(undefined, undefined, filePath)}
                                 />
+                            </div>
+                        ) : filePath && activeNode?.type === "file" ? (
+                            <div className="ml-auto flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleFavorite(undefined, undefined, filePath)}
+                                    className={cx(
+                                        "flex size-8 cursor-pointer items-center justify-center rounded-md transition hover:bg-secondary",
+                                        isArticleFavorite ? "text-warning-primary" : "text-fg-quaternary"
+                                    )}
+                                    title={isArticleFavorite ? "Remove from favorites" : "Add to favorites"}
+                                >
+                                    <Star01 className={cx("size-5", isArticleFavorite && "fill-warning-primary")} />
+                                </button>
+                                <button
+                                    type="button"
+                                    className="flex size-8 cursor-pointer items-center justify-center rounded-md text-fg-quaternary transition hover:bg-secondary"
+                                    title="Article info"
+                                    onClick={() => clipboard.copy(filePath, "path")}
+                                >
+                                    <InfoCircle className="size-5" />
+                                </button>
+                                <Dropdown.Root>
+                                    <Button size="sm" color="primary">
+                                        Actions
+                                    </Button>
+                                    <Dropdown.Popover>
+                                        <Dropdown.Menu>
+                                            <Dropdown.Item
+                                                icon={Copy01}
+                                                onAction={() => {
+                                                    if (typeof window !== "undefined") {
+                                                        clipboard.copy(`${window.location.origin}/wiki/${filePath}`, "link");
+                                                    }
+                                                }}
+                                            >
+                                                Copy link
+                                            </Dropdown.Item>
+                                            <Dropdown.Item
+                                                icon={Copy01}
+                                                onAction={() => clipboard.copy(filePath, "path")}
+                                            >
+                                                Copy path
+                                            </Dropdown.Item>
+                                        </Dropdown.Menu>
+                                    </Dropdown.Popover>
+                                </Dropdown.Root>
                             </div>
                         ) : null}
                     </header>
