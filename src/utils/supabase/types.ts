@@ -3,6 +3,8 @@ export type RipplingDepartment = {
     name: string | null;
 };
 
+export type Department = RipplingDepartment;
+
 export type DirectoryEntryType = "frame" | "folder" | "article";
 
 export type DirectoryEntry = {

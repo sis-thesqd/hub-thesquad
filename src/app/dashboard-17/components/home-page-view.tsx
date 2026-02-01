@@ -10,8 +10,8 @@ interface HomePageViewProps {
     entries: DirectoryEntry[];
     frames: Frame[];
     userDepartmentId: string | null;
-    favoriteDepartmentIds: Set<string>;
-    favoriteEntryIds: Set<string>;
+    favoriteDepartmentIds: string[];
+    favoriteEntryIds: string[];
     onToggleDepartmentFavorite: (deptId: string) => void;
 }
 

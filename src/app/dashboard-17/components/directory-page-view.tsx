@@ -15,7 +15,7 @@ interface DirectoryPageViewProps {
     frames: Frame[];
     navigationPages: NavigationPage[];
     initialModalAction: "folder" | "page" | null;
-    favoriteEntryIds: Set<string>;
+    favoriteEntryIds: string[];
     onHeaderContentChange: (content: React.ReactNode) => void;
     onActiveEntryChange: (info: ActiveEntryInfo) => void;
     onToggleFavorite: (entryId?: string, departmentId?: string, articlePath?: string) => void;

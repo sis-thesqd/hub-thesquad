@@ -1,13 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getFileContent } from "@/utils/wiki/github";
 
 export async function GET(
-    request: Request,
-    { params }: { params?: { path?: string[] } },
+    request: NextRequest,
+    context: { params: Promise<{ path: string[] }> },
 ) {
     try {
+        const { path } = await context.params;
         const filePath =
-            params?.path?.join("/") ??
+            path?.join("/") ??
             decodeURIComponent(new URL(request.url).pathname.replace(/^\/api\/docs\//, ""));
         const file = await getFileContent(filePath);
         return NextResponse.json(file, {

@@ -71,7 +71,7 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
     const homeModals = useHomeModals({
         entries,
         departments,
-        userDepartmentId: worker?.department_id,
+        userDepartmentId: worker?.department_id ?? undefined,
         modalDepartmentItems,
     });
 
@@ -82,7 +82,7 @@ export const Dashboard17 = ({ initialDepartmentSlug, initialPath, showFavorites 
     // Read modal action from URL params
     const modalParam = urlParams.get("modal");
     const initialModalAction = (modalParam === "folder" || modalParam === "page") ? modalParam : null;
-    const firstName = worker?.preferred_given_name || worker?.given_name;
+    const firstName = worker?.preferred_given_name || worker?.given_name || undefined;
     const hasLoadedName = Boolean(firstName);
 
     // Resolve department slug to ID

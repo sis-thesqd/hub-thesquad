@@ -140,7 +140,7 @@ export const SettingsPage = () => {
     }, [departments, navigationPages, divisionOrder]);
 
     // Handle command menu selection
-    const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page", id: string) => {
+    const handleCommandMenuSelect = useCallback((type: "department" | "folder" | "page" | "wiki", id: string) => {
         if (type === "department") {
             const slug = getDepartmentSlug(id, departments, navigationPages);
             router.push(appendUrlParams(`/${slug}`));
@@ -179,6 +179,8 @@ export const SettingsPage = () => {
                 const url = buildDepartmentUrl(entry.department_id, pathParts, departments, navigationPages);
                 router.push(appendUrlParams(url));
             }
+        } else if (type === "wiki") {
+            router.push(appendUrlParams(`/wiki/${id}`));
         }
     }, [appendUrlParams, departments, navigationPages, entries, frames, router]);
 

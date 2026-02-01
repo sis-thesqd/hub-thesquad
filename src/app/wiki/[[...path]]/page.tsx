@@ -82,7 +82,7 @@ export default function WikiPage() {
         fetchTree();
     }, []);
 
-    const findNodeByPath = (nodes: typeof tree, path: string) => {
+    const findNodeByPath = (nodes: FileNode[], path: string): FileNode | null => {
         for (const node of nodes) {
             if (node.path === path) return node;
             if (node.children?.length) {
@@ -131,7 +131,9 @@ export default function WikiPage() {
 
     const topLevelFolders = tree.filter((node) => node.type === "dir");
     const topLevelFiles = tree.filter((node) => node.type === "file" && !/readme\\.md$/i.test(node.name));
-    const folderItems = isFolder ? (activeNode?.children ?? []).filter((node) => node.type === "dir" || !/readme\.md$/i.test(node.name)) : [];
+    const folderItems: FileNode[] = isFolder
+        ? (activeNode?.children ?? []).filter((node) => node.type === "dir" || !/readme\.md$/i.test(node.name))
+        : [];
 
     const formatFolderLabel = (value: string) => {
         const title = value
