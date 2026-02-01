@@ -26,7 +26,13 @@ const githubFetch = async <T>(path: string): Promise<T> => {
     });
 
     if (!response.ok) {
-        const message = await response.text();
+        let message = "";
+        try {
+            const data = await response.json();
+            message = typeof data?.message === "string" ? data.message : JSON.stringify(data);
+        } catch {
+            message = await response.text();
+        }
         throw new Error(`GitHub API error (${response.status}): ${message}`);
     }
 

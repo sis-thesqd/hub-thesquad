@@ -96,14 +96,14 @@ export default function WikiPage() {
 
             try {
                 const response = await fetch(`/api/docs/${filePath}`);
+                const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
-                    throw new Error("Failed to fetch document");
+                    throw new Error(data?.details || data?.error || "Failed to fetch document");
                 }
-                const data = await response.json();
                 setContent(data.content ?? "");
             } catch (err) {
                 console.error("Error fetching document:", err);
-                setError("Failed to load document");
+                setError(err instanceof Error ? err.message : "Failed to load document");
                 setContent("# Error\n\nFailed to load the requested document.");
             } finally {
                 setLoading(false);
