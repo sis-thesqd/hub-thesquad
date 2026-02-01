@@ -108,15 +108,16 @@ export const useHomeModals = ({
                 return;
             }
 
-            if (result.data) {
+            const newEntry = result.data;
+            if (newEntry) {
                 setPendingFolderForPlacement({
-                    id: result.data.id,
-                    name: result.data.name,
-                    emoji: result.data.emoji ?? undefined,
+                    id: newEntry.id,
+                    name: newEntry.name,
+                    emoji: newEntry.emoji ?? undefined,
                 });
                 updateDirectory((current) => ({
                     ...current,
-                    entries: [...current.entries, result.data],
+                    entries: [...current.entries, newEntry],
                 }));
             } else {
                 invalidateEntriesAndFrames();

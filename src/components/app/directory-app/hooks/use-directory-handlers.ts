@@ -126,10 +126,11 @@ export const useDirectoryHandlers = ({
         setCreateFolderParentId(null);
         setCreateFolderOpen(false);
 
-        if (result.data) {
+        const newEntry = result.data;
+        if (newEntry) {
             updateDirectory((current) => ({
                 ...current,
-                entries: [...current.entries, result.data],
+                entries: [...current.entries, newEntry],
             }));
         } else {
             invalidateEntriesAndFrames();
@@ -162,16 +163,17 @@ export const useDirectoryHandlers = ({
         setInlineFolderForm(emptyForm);
         setInlineFolderOpen(false);
 
-        if (result.data) {
+        const newEntry = result.data;
+        if (newEntry) {
             updateDirectory((current) => ({
                 ...current,
-                entries: [...current.entries, result.data],
+                entries: [...current.entries, newEntry],
             }));
 
             pagePlacements.append({
-                id: result.data.id,
-                label: result.data.name,
-                emoji: result.data.emoji ?? undefined,
+                id: newEntry.id,
+                label: newEntry.name,
+                emoji: newEntry.emoji ?? undefined,
             });
         } else {
             invalidateEntriesAndFrames();
@@ -286,11 +288,12 @@ export const useDirectoryHandlers = ({
         setCreatePageOpen(false);
         clearSelectedItems(pageDepartments);
         clearSelectedItems(pagePlacements);
-        if (entriesResult.success && entriesResult.data) {
+        const newEntries = entriesResult.data;
+        if (entriesResult.success && newEntries) {
             updateDirectory((current) => ({
                 ...current,
                 frames: [...current.frames, frame],
-                entries: [...current.entries, ...entriesResult.data],
+                entries: [...current.entries, ...newEntries],
             }));
         } else {
             updateDirectory((current) => ({
@@ -454,11 +457,12 @@ export const useDirectoryHandlers = ({
             });
 
             const createdEntries = await createDirectoryEntries(newEntries);
+            const createdData = createdEntries.data;
 
-            if (createdEntries.success && createdEntries.data) {
+            if (createdEntries.success && createdData) {
                 updateDirectory((current) => ({
                     ...current,
-                    entries: [...current.entries, ...createdEntries.data],
+                    entries: [...current.entries, ...createdData],
                 }));
             }
         }

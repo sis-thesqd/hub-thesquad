@@ -81,7 +81,7 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
         return null;
     }
 
-    const mobileItems = footerItems.length > 0 ? [...items, { divider: true }, ...footerItems] : items;
+    const mobileItems = footerItems.length > 0 ? [...items, { divider: true as const }, ...footerItems] : items;
 
     const mainSidebar = (
         <aside

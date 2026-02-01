@@ -6,13 +6,27 @@ import type { FormState } from "@/components/app/directory-app/types";
 import type { SelectItemType } from "@/components/base/select/select";
 import type { Frame } from "@/utils/supabase/types";
 
+type FolderOption = {
+    id: string;
+    label: string;
+    supportingText?: string;
+    emoji?: string;
+    icon?: React.ComponentType<any>;
+};
+
+type DepartmentItem = {
+    id: string;
+    label: string;
+    icon: React.FC<{ className?: string }>;
+};
+
 interface HomeModalsProps {
     // Folder modal
     createFolderOpen: boolean;
     onCreateFolderOpenChange: (open: boolean) => void;
     folderForm: FormState;
     onFolderFormChange: (form: FormState) => void;
-    folderOptions: SelectItemType[];
+    folderOptions: FolderOption[];
     folderParentId: string | null;
     onFolderParentIdChange: (id: string | null) => void;
     onFolderSubmit: () => void;
@@ -21,7 +35,7 @@ interface HomeModalsProps {
     onCreatePageOpenChange: (open: boolean) => void;
     pageForm: FormState;
     onPageFormChange: (form: FormState) => void;
-    departmentItems: SelectItemType[];
+    departmentItems: DepartmentItem[];
     pageDepartments: ListData<SelectItemType>;
     pagePlacements: ListData<SelectItemType>;
     onFolderSelected: (key: string | number) => void;

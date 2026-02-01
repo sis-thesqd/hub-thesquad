@@ -77,7 +77,7 @@ export const WikiSearch = ({ className }: WikiSearchProps) => {
                 icon={SearchLg}
                 placeholder="Search wiki..."
                 shortcut
-                readOnly
+                isReadOnly
                 onFocus={() => setOpen(true)}
                 onClick={() => setOpen(true)}
                 className={className}

@@ -12,8 +12,8 @@ type MermaidChartProps = {
 
 const getMermaidConfig = () => ({
     startOnLoad: false,
-    securityLevel: "strict",
-    theme: "base",
+    securityLevel: "strict" as const,
+    theme: "base" as const,
     themeVariables: {
         background: "transparent",
         primaryColor: "#F5F5FF",
