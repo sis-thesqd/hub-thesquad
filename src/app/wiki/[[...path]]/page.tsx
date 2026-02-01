@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { Folder, Lightbulb02, Star01 } from "@untitledui/icons";
+import { ArrowLeft, File02, Folder, Lightbulb02 } from "@untitledui/icons";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
-import { WikiBreadcrumb } from "@/components/app/wiki/wiki-breadcrumb";
 import { WikiMarkdown } from "@/components/app/wiki/wiki-markdown";
-import { ButtonUtility } from "@/components/base/buttons/button-utility";
+import { WikiToc } from "@/components/app/wiki/wiki-toc";
 import { useAuth } from "@/providers/auth-provider";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useDirectoryQueries } from "@/hooks/use-directory-queries";
@@ -15,7 +15,7 @@ import { useDepartmentItems } from "@/app/dashboard-17/hooks/use-department-item
 import { useCommandMenuHandler } from "@/app/dashboard-17/hooks/use-command-menu-handler";
 import type { FileNode } from "@/utils/wiki/types";
 import Link from "next/link";
-import { getIconByName } from "@/utils/icon-map";
+import { EmbeddedFolderHeader } from "@/components/app/directory-app/components/embedded-folder-header";
 
 const DirectoryCommandMenu = dynamic(
     () => import("@/components/app/directory-app/components/directory-command-menu").then((mod) => mod.DirectoryCommandMenu),
@@ -23,6 +23,7 @@ const DirectoryCommandMenu = dynamic(
 );
 
 export default function WikiPage() {
+    const router = useRouter();
     const params = useParams();
     const { worker } = useAuth();
     const { departments, navigationPages, entries, frames, divisionOrder } = useDirectoryQueries();
@@ -129,6 +130,7 @@ export default function WikiPage() {
 
     const formatFolderLabel = (value: string) => {
         const title = value
+            .replace(/\.md$/i, "")
             .replace(/_/g, " ")
             .replace(/\b\w/g, (char) => char.toUpperCase());
 
@@ -139,6 +141,15 @@ export default function WikiPage() {
             .replace(/\bSis\b/g, "SIS")
             .replace(/\bPrf\b/g, "PRF");
     };
+
+    const headerTitle = useMemo(() => {
+        if (!filePath) return "Wiki";
+        if (!activeNode) return "Wiki";
+        if (activeNode.type === "dir") {
+            return formatFolderLabel(activeNode.name);
+        }
+        return formatFolderLabel(activeNode.name.replace(/\.md$/i, ""));
+    }, [activeNode, filePath]);
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-primary lg:flex-row">
@@ -161,20 +172,35 @@ export default function WikiPage() {
 
             <main className="min-w-0 flex-1 overflow-hidden lg:pt-2 lg:pl-1">
                 <div className="flex h-full flex-col overflow-hidden border-secondary lg:rounded-tl-[24px] lg:border-t lg:border-l">
-                    <header className="flex flex-wrap items-center gap-3 border-secondary bg-primary px-4 py-4 lg:px-8">
+                    <header className="flex flex-col gap-4 border-secondary bg-primary px-4 py-4 lg:flex-row lg:items-center lg:px-8">
                         {filePath ? (
-                            <WikiBreadcrumb path={filePath} className="flex-1" />
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => router.back()}
+                                    className="flex size-8 items-center justify-center rounded-md text-fg-quaternary transition hover:bg-secondary hover:text-fg-secondary"
+                                    title="Go back"
+                                >
+                                    <ArrowLeft className="size-5" />
+                                </button>
+                                <p className="text-lg font-semibold text-primary">{headerTitle}</p>
+                            </div>
                         ) : (
                             <h1 className="text-lg font-semibold text-primary">Wiki</h1>
                         )}
-                        {filePath && (
-                            <ButtonUtility
-                                tooltip={isArticleFavorite ? "Remove from favorites" : "Add to favorites"}
-                                icon={<Star01 className={isArticleFavorite ? "fill-warning-primary text-warning-primary" : ""} />}
-                                color="secondary"
-                                onClick={() => toggleFavorite(undefined, undefined, filePath)}
-                            />
-                        )}
+
+                        {filePath ? (
+                            <div className="ml-auto">
+                                <EmbeddedFolderHeader
+                                    showEditButton
+                                    onEditFolder={() => {}}
+                                    onNewFolder={() => {}}
+                                    onNewPage={() => {}}
+                                    isFavorite={isArticleFavorite}
+                                    onToggleFavorite={() => toggleFavorite(undefined, undefined, filePath)}
+                                />
+                            </div>
+                        ) : null}
                     </header>
 
                     <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 lg:px-8">
@@ -185,11 +211,11 @@ export default function WikiPage() {
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                     {(filePath ? folderItems : topLevelFolders).map((node) => {
                                         const mappedPage = docsFolderMap.get(node.path);
-                                        const Icon = Folder;
+                                        const Icon = node.type === "file" ? File02 : Folder;
                                         return (
-                                        <Link
-                                            key={node.path}
-                                            href={`/wiki/${node.path}`}
+                                            <Link
+                                                key={node.path}
+                                                href={`/wiki/${node.path}`}
                                             className="group flex items-center gap-4 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
                                         >
                                             <div className="flex size-12 items-center justify-center rounded-lg bg-secondary">
@@ -217,7 +243,7 @@ export default function WikiPage() {
                                                     href={`/wiki/${node.path}`}
                                                     className="group flex items-center gap-3 rounded-xl border border-secondary_alt bg-primary p-4 transition hover:border-brand-solid hover:bg-primary_hover"
                                                 >
-                                                    <Folder className="size-5 text-fg-tertiary group-hover:text-brand-secondary" />
+                                                    <File02 className="size-5 text-fg-tertiary group-hover:text-brand-secondary" />
                                                     <div className="min-w-0 flex-1">
                                                         <p className="truncate text-sm font-medium text-primary">
                                                             {node.name.replace(/\\.md$/, "")}
@@ -237,7 +263,12 @@ export default function WikiPage() {
                                 <p className="text-sm text-fg-error-secondary">{error}</p>
                             </div>
                         ) : (
-                            <WikiMarkdown content={content} />
+                            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_240px] lg:gap-8">
+                                <WikiMarkdown content={content} />
+                                <div className="mt-10 hidden lg:block">
+                                    <WikiToc content={content} />
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>
